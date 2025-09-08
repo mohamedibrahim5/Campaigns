@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broadcast Landing</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; color: #111; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 24px; margin-bottom: 16px; }
+        form { border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; margin-bottom: 24px; }
+        label { display: block; font-weight: 600; margin-top: 12px; margin-bottom: 6px; }
+        select, input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; }
+        button { background: #111827; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; margin-top: 12px; }
+        button:hover { background: #374151; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .muted { color: #6b7280; font-size: 14px; }
+    </style>
+    <script>
+        async function postJSON(url, data) {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const js = await resp.json();
+            if (!resp.ok || js.ok === false) throw new Error(js.error || js.description || 'Request failed');
+            return js;
+        }
+
+        async function sendText(evt) {
+            evt.preventDefault();
+            const botId = document.getElementById('bot').value;
+            const text = document.getElementById('text').value.trim();
+            if (!botId || !text) return alert('Select bot and enter text');
+            try {
+                const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'text', text });
+                alert('Text broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')');
+            } catch (e) { alert(e.message); }
+        }
+
+        async function sendPhoto(evt) {
+            evt.preventDefault();
+            const botId = document.getElementById('bot').value;
+            const photo = document.getElementById('photo').value.trim();
+            const caption = document.getElementById('caption').value.trim();
+            if (!botId || !photo) return alert('Select bot and enter photo URL');
+            try {
+                const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'photo', photo, caption });
+                alert('Photo broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')');
+            } catch (e) { alert(e.message); }
+        }
+
+        async function sendAndPin(evt) {
+            evt.preventDefault();
+            const botId = document.getElementById('bot').value;
+            const pinText = document.getElementById('pin_text').value.trim();
+            if (!botId || !pinText) return alert('Select bot and enter text');
+            try {
+                const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'pin', text: pinText });
+                alert('Pinned message sent to ' + js.sent + ' users (failed: ' + js.failed + ')');
+            } catch (e) { alert(e.message); }
+        }
+        async function uploadFile() {
+            const botId = document.getElementById('bot').value;
+            if (!botId) return alert('Select a bot first');
+            const fileInput = document.getElementById('file');
+            if (!fileInput.files || !fileInput.files[0]) return alert('Choose an image');
+            const form = new FormData();
+            form.append('file', fileInput.files[0]);
+            try {
+                const resp = await fetch('/hub/upload_photo/', { method: 'POST', body: form, credentials: 'include' });
+                const js = await resp.json();
+                if (!resp.ok || js.ok === false) throw new Error(js.error || 'Upload failed');
+                document.getElementById('photo').value = js.url;
+                alert('Uploaded. URL set.');
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+        async function sendToChat(evt) {
+            evt.preventDefault();
+            const botId = document.getElementById('bot').value;
+            const chatId = document.getElementById('chat_id').value.trim();
+            const text = document.getElementById('chat_text').value.trim();
+            if (!botId || !chatId || !text) return alert('Bot, chat id and text are required');
+            try {
+                const js = await postJSON('/hub/send_to_chat/', { bot_id: Number(botId), chat_id: chatId, text });
+                alert('Sent');
+            } catch (e) { alert(e.message); }
+        }
+        async function updateBotProfile(evt) {
+            evt.preventDefault();
+            const botId = document.getElementById('bot').value;
+            const name = document.getElementById('bot_name').value.trim();
+            try {
+                const resp = await fetch(`/hub/bots/${botId}/update_profile/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const js = await resp.json();
+                if (!resp.ok || js.ok === false) throw new Error(js.error || 'Update failed');
+                document.getElementById('bot_name_display').innerText = js.bot.name;
+                alert('Saved');
+            } catch (e) { alert(e.message); }
+        }
+        async function syncBotProfileToTelegram() {
+            const botId = document.getElementById('bot').value;
+            const name = document.getElementById('bot_name').value.trim();
+            const description = '';
+            const short_description = document.getElementById('bot_short_description').value.trim();
+            try {
+                const resp = await fetch(`/hub/bots/${botId}/sync_profile/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, short_description })
+                });
+                const js = await resp.json();
+                if (!resp.ok || js.ok === false) throw new Error(js.error || 'Sync failed');
+                alert('Synced to Telegram. Note: profile photo must be changed via @BotFather.');
+            } catch (e) { alert(e.message); }
+        }
+    </script>
+    {% csrf_token %}
+  </head>
+  <body>
+    <div class="container">
+        <h1>Broadcast Center</h1>
+        <p class="muted">Send text, photos, or pinned messages to all users of a bot.</p>
+
+        {% if bot %}
+            <input type="hidden" id="bot" value="{{ bot.id }}" />
+            <div style="display:flex; gap:16px; align-items:flex-start;">
+                <div>
+                    <p><strong>Bot:</strong> <span id="bot_name_display">{{ bot.name }}</span> (…{{ bot.token|slice:'-4:' }})</p>
+                    {% if bot.description %}
+                      <p id="bot_desc_display" class="muted">{{ bot.description }}</p>
+                    {% else %}
+                      <p id="bot_desc_display" class="muted"></p>
+                    {% endif %}
+                    <p><a href="/hub/logs/{{ bot.id }}/" target="_blank">View Message Logs</a> · <a href="/hub/logs/{{ bot.id }}/pdf/" target="_blank">Download PDF</a></p>
+                </div>
+                <div>
+                    {% if bot.image_url %}
+                      <img id="bot_image_display" src="{{ bot.image_url }}" alt="Bot image" style="max-width:140px; border-radius:8px; border:1px solid #eee;" />
+                    {% else %}
+                      <img id="bot_image_display" alt="Bot image" style="display:none; max-width:140px; border-radius:8px; border:1px solid #eee;" />
+                    {% endif %}
+                </div>
+            </div>
+            <!-- <form onsubmit="updateBotProfile(event)" style="margin-top: 8px;">
+                <h3>Bot Profile</h3>
+                <label for="bot_name">Name</label>
+                <input id="bot_name" type="text" value="{{ bot.name }}" />
+                <button type="submit">Save Name</button>
+                <div style="margin-top:8px;">
+                    <label for="bot_short_description">Short description (120 chars)</label>
+                    <input id="bot_short_description" type="text" maxlength="120" placeholder="Shown on the bot profile" />
+                    <button type="button" onclick="syncBotProfileToTelegram()" style="margin-top:8px;">Sync to Telegram</button>
+                </div>
+            </form> -->
+        {% else %}
+            <label for="bot">Bot</label>
+            <select id="bot">
+                <option value="">Select a bot</option>
+                {% for b in bots %}
+                <option value="{{ b.id }}">{{ b.name }} (…{{ b.token|slice:'-4:' }})</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+
+        <div class="grid" style="margin-top: 16px;">
+            <form onsubmit="sendText(event)">
+                <h3>Send Text</h3>
+                <label for="text">Message</label>
+                <textarea id="text" rows="4" placeholder="Type your broadcast text..."></textarea>
+                <button type="submit">Send Text</button>
+            </form>
+
+            <form onsubmit="sendPhoto(event)">
+                <h3>Send Photo</h3>
+                <label for="photo">Photo URL</label>
+                <input id="photo" type="text" placeholder="https://example.com/image.jpg" />
+                <div style="margin-top:8px;">
+                    <input id="file" type="file" accept="image/*" />
+                    <button type="button" onclick="uploadFile()" style="margin-left:8px;">Upload file</button>
+                </div>
+                <label for="caption">Caption (optional)</label>
+                <input id="caption" type="text" placeholder="Caption for the photo" />
+                <button type="submit">Send Photo</button>
+            </form>
+        </div>
+
+        <form onsubmit="sendAndPin(event)" style="margin-top: 16px;">
+            <h3>Send & Pin Message</h3>
+            <label for="pin_text">Text to pin</label>
+            <textarea id="pin_text" rows="3" placeholder="Message to pin in chats..."></textarea>
+            <button type="submit">Send & Pin</button>
+        </form>
+        <form onsubmit="sendToChat(event)" style="margin-top: 16px;">
+            <h3>Reply to a Specific Chat</h3>
+            <label for="chat_id">Chat ID</label>
+            <input id="chat_id" type="text" placeholder="Telegram chat ID (e.g., 123456789)" />
+            <label for="chat_text">Message</label>
+            <textarea id="chat_text" rows="3" placeholder="Type your reply..."></textarea>
+            <button type="submit">Send Reply</button>
+        </form>
+    </div>
+  </body>
+ </html>
+
+

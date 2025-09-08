@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Send Message</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+        .field { margin-bottom: 12px; }
+        label { display: block; font-size: 14px; margin-bottom: 6px; }
+        select, input, textarea { width: 360px; max-width: 100%; padding: 8px; }
+        button { padding: 8px 12px; }
+        .ok { color: #065f46; background:#ecfdf5; padding:8px; border-radius:6px; display:inline-block; }
+        .err { color: #991b1b; background:#fee2e2; padding:8px; border-radius:6px; display:inline-block; }
+    </style>
+</head>
+<body>
+    <h2>Send a message</h2>
+    {% if success %}
+        <div class="ok">Message sent successfully.</div>
+    {% endif %}
+    {% if error %}
+        <div class="err">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="field">
+            <label>Bot</label>
+            <select name="bot_id" required>
+                {% for b in bots %}
+                    <option value="{{ b.id }}">{{ b.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label>Chat ID (Telegram ID)</label>
+            <input type="text" name="chat_id" required>
+        </div>
+        <div class="field">
+            <label>Text</label>
+            <textarea name="text" rows="4" required></textarea>
+        </div>
+        <button type="submit">Send</button>
+    </form>
+    <p style="margin-top:12px"><a href="/hub/">Back to dashboard</a></p>
+</body>
+</html>
+
+

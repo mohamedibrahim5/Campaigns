@@ -1,0 +1,57 @@
+from django.urls import path
+from .views import (
+    validate_token,
+    broadcast,
+    dashboard,
+    broadcast_landing,
+    broadcast_landing_bot,
+    upload_photo,
+    bot_logs_html,
+    bot_logs_pdf,
+    send_to_chat,
+    update_bot_profile,
+    sync_bot_profile_to_telegram,
+    fetch_bot_profile_from_telegram,
+    create_bot,
+    start_bot,
+    stop_bot,
+    assign_bot_to_campaign,
+    telegram_webhook,
+    set_webhook,
+    staff_send_form,
+    broadcast_all,
+    debug_bot_users,
+    test_webhook,     # Add this
+    import_updates,
+    broadcast_action,
+)
+
+urlpatterns = [
+    path('', dashboard, name='hub_dashboard'),
+    path('landing/', broadcast_landing, name='hub_landing'),
+    path('landing/<int:bot_id>/', broadcast_landing_bot, name='hub_landing_bot'),
+    path('upload_photo/', upload_photo, name='hub_upload_photo'),
+    path('logs/<int:bot_id>/', bot_logs_html, name='hub_logs_html'),
+    path('logs/<int:bot_id>/pdf/', bot_logs_pdf, name='hub_logs_pdf'),
+    path('send_to_chat/', send_to_chat, name='hub_send_to_chat'),
+    path('bots/<int:bot_id>/update_profile/', update_bot_profile, name='hub_update_bot_profile'),
+    path('bots/<int:bot_id>/sync_profile/', sync_bot_profile_to_telegram, name='hub_sync_bot_profile'),
+    path('bots/<int:bot_id>/fetch_profile/', fetch_bot_profile_from_telegram, name='hub_fetch_bot_profile'),
+    path('validate/', validate_token),
+    path('broadcast/', broadcast),
+    path('broadcast_all/', broadcast_all),
+    path('broadcast_action/', broadcast_action),
+    path('import_updates/', import_updates),
+    path('bots/create/', create_bot),
+    path('bots/start/', start_bot),
+    path('bots/stop/', stop_bot),
+    path('campaigns/assign/', assign_bot_to_campaign),
+    path('bots/<int:bot_id>/webhook/', telegram_webhook),
+    path('bots/set_webhook/', set_webhook),
+    path('send/', staff_send_form, name='hub_send_form'),
+    path('bots/<int:bot_id>/debug/', debug_bot_users),
+    # Debug endpoints
+    path('bots/<int:bot_id>/test/', test_webhook),
+
+
+]

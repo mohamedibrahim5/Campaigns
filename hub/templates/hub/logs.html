@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ bot.name }} Logs</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; color: #111; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; vertical-align: top; }
+    th { background: #f9fafb; }
+    .top { display:flex; align-items:center; justify-content: space-between; margin-bottom: 16px; }
+    a.button { background: #111827; color:#fff; padding: 8px 12px; border-radius: 6px; text-decoration:none; }
+    a.button:hover { background:#374151; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h2>{{ bot.name }} – Recent Logs</h2>
+    <div>
+      <a class="button" href="/hub/logs/{{ bot.id }}/pdf/">Download PDF</a>
+      <a class="button" href="/hub/landing/{{ bot.id }}/" style="margin-left:8px;">Back</a>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Chat</th>
+        <th>Message ID</th>
+        <th>Text</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.received_at }}</td>
+        <td>{{ log.chat_id }}</td>
+        <td>{{ log.message_id }}</td>
+        <td style="white-space: pre-wrap;">{{ log.text }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">No logs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
+
+
