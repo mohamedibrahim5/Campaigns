@@ -15,6 +15,8 @@
         button:hover { background: #374151; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         .muted { color: #6b7280; font-size: 14px; }
+        .progress { height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-top: 8px; }
+        .progress > span { display: block; height: 100%; width: 0%; background: #10b981; transition: width .2s ease; }
     </style>
     <script>
         async function postJSON(url, data) {
@@ -34,8 +36,12 @@
             const text = document.getElementById('text').value.trim();
             if (!botId || !text) return alert('Select bot and enter text');
             try {
+                const btn = document.getElementById('send_text_btn');
+                const prev = btn ? btn.innerText : '';
+                if (btn) { btn.disabled = true; btn.innerText = 'Sending…'; }
                 const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'text', text });
                 alert('Text broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')');
+                if (btn) { btn.disabled = false; btn.innerText = prev; }
             } catch (e) { alert(e.message); }
         }
 
@@ -43,11 +49,17 @@
             evt.preventDefault();
             const botId = document.getElementById('bot').value;
             const photo = document.getElementById('photo').value.trim();
+            const photoPath = document.getElementById('photo_path') ? document.getElementById('photo_path').value.trim() : '';
             const caption = document.getElementById('caption').value.trim();
             if (!botId || !photo) return alert('Select bot and enter photo URL');
             try {
-                const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'photo', photo, caption });
-                alert('Photo broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')');
+                const btn = document.getElementById('send_photo_btn');
+                const prev = btn ? btn.innerText : '';
+                if (btn) { btn.disabled = true; btn.innerText = 'Sending…'; }
+                const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'photo', photo, photo_path: photoPath, caption });
+                const err = (js.failures && js.failures[0] && js.failures[0].error) ? ('\nError: ' + js.failures[0].error) : '';
+                alert('Photo broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')' + err);
+                if (btn) { btn.disabled = false; btn.innerText = prev; }
             } catch (e) { alert(e.message); }
         }
 
@@ -57,26 +69,79 @@
             const pinText = document.getElementById('pin_text').value.trim();
             if (!botId || !pinText) return alert('Select bot and enter text');
             try {
+                const btn = document.getElementById('send_pin_btn');
+                const prev = btn ? btn.innerText : '';
+                if (btn) { btn.disabled = true; btn.innerText = 'Sending…'; }
                 const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'pin', text: pinText });
                 alert('Pinned message sent to ' + js.sent + ' users (failed: ' + js.failed + ')');
+                if (btn) { btn.disabled = false; btn.innerText = prev; }
             } catch (e) { alert(e.message); }
         }
-        async function uploadFile() {
+        function uploadWithProgress(fileInputId, targetInputId, progressId, pathHiddenId) {
             const botId = document.getElementById('bot').value;
-            if (!botId) return alert('Select a bot first');
-            const fileInput = document.getElementById('file');
-            if (!fileInput.files || !fileInput.files[0]) return alert('Choose an image');
+            if (!botId) { alert('Select a bot first'); return; }
+            const inp = document.getElementById(fileInputId);
+            if (!inp.files || !inp.files[0]) { alert('Choose a file'); return; }
             const form = new FormData();
-            form.append('file', fileInput.files[0]);
+            form.append('file', inp.files[0]);
+            const xhr = new XMLHttpRequest();
+            const bar = document.getElementById(progressId);
+            const inner = bar ? bar.querySelector('span') : null;
+            if (inner) inner.style.width = '0%';
+            xhr.open('POST', '/hub/upload_photo/', true);
+            xhr.withCredentials = true;
+            xhr.upload.onprogress = function (e) {
+                if (!inner || !e.lengthComputable) return;
+                const pct = Math.round((e.loaded / e.total) * 100);
+                inner.style.width = pct + '%';
+            };
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    try {
+                        const js = JSON.parse(xhr.responseText || '{}');
+                        if (xhr.status >= 200 && xhr.status < 300 && js.ok) {
+                            document.getElementById(targetInputId).value = js.url;
+                            if (pathHiddenId) {
+                                document.getElementById(pathHiddenId).value = js.path || '';
+                            }
+                        } else {
+                            alert(js.error || 'Upload failed');
+                        }
+                    } catch (err) {
+                        alert('Upload failed');
+                    }
+                }
+            };
+            xhr.send(form);
+        }
+        function uploadPhotoFile() { uploadWithProgress('file', 'photo', 'photo_progress', 'photo_path'); }
+        function uploadVideoFile() { uploadWithProgress('video_file', 'video_url', 'video_progress', 'video_path'); }
+        function copyToClipboard(inputId) {
+            const val = document.getElementById(inputId).value.trim();
+            if (!val) { alert('No URL to copy'); return; }
+            navigator.clipboard.writeText(val).then(() => alert('Copied')).catch(() => alert('Copy failed'));
+        }
+        function openInNewTab(inputId) {
+            const val = document.getElementById(inputId).value.trim();
+            if (!val) { alert('No URL'); return; }
+            window.open(val, '_blank');
+        }
+        async function sendVideo(evt) {
+            evt.preventDefault();
+            const botId = document.getElementById('bot').value;
+            const video = document.getElementById('video_url').value.trim();
+            const videoPath = document.getElementById('video_path').value.trim();
+            const caption = document.getElementById('video_caption').value.trim();
+            if (!botId || !video) return alert('Select bot and enter video URL');
             try {
-                const resp = await fetch('/hub/upload_photo/', { method: 'POST', body: form, credentials: 'include' });
-                const js = await resp.json();
-                if (!resp.ok || js.ok === false) throw new Error(js.error || 'Upload failed');
-                document.getElementById('photo').value = js.url;
-                alert('Uploaded. URL set.');
-            } catch (e) {
-                alert(e.message);
-            }
+                const btn = document.getElementById('send_video_btn');
+                const prev = btn.innerText;
+                btn.disabled = true; btn.innerText = 'Sending…';
+                const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'video', video, video_path: videoPath, caption });
+                const err = (js.failures && js.failures[0] && js.failures[0].error) ? ('\nError: ' + js.failures[0].error) : '';
+                alert('Video broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')' + err);
+                btn.disabled = false; btn.innerText = prev;
+            } catch (e) { alert(e.message); }
         }
         async function sendToChat(evt) {
             evt.preventDefault();
@@ -85,8 +150,12 @@
             const text = document.getElementById('chat_text').value.trim();
             if (!botId || !chatId || !text) return alert('Bot, chat id and text are required');
             try {
+                const btn = document.getElementById('send_reply_btn');
+                const prev = btn ? btn.innerText : '';
+                if (btn) { btn.disabled = true; btn.innerText = 'Sending…'; }
                 const js = await postJSON('/hub/send_to_chat/', { bot_id: Number(botId), chat_id: chatId, text });
                 alert('Sent');
+                if (btn) { btn.disabled = false; btn.innerText = prev; }
             } catch (e) { alert(e.message); }
         }
         async function updateBotProfile(evt) {
@@ -175,28 +244,53 @@
                 <h3>Send Text</h3>
                 <label for="text">Message</label>
                 <textarea id="text" rows="4" placeholder="Type your broadcast text..."></textarea>
-                <button type="submit">Send Text</button>
+                <button id="send_text_btn" type="submit">Send Text</button>
             </form>
 
             <form onsubmit="sendPhoto(event)">
                 <h3>Send Photo</h3>
                 <label for="photo">Photo URL</label>
-                <input id="photo" type="text" placeholder="https://example.com/image.jpg" />
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input id="photo" type="text" placeholder="https://example.com/image.jpg" />
+                    <button type="button" onclick="copyToClipboard('photo')">Copy</button>
+                    <button type="button" onclick="openInNewTab('photo')">Open</button>
+                </div>
                 <div style="margin-top:8px;">
                     <input id="file" type="file" accept="image/*" />
-                    <button type="button" onclick="uploadFile()" style="margin-left:8px;">Upload file</button>
+                    <button type="button" onclick="uploadPhotoFile()" style="margin-left:8px;">Upload file</button>
+                    <div id="photo_progress" class="progress" style="max-width: 240px;"><span></span></div>
                 </div>
                 <label for="caption">Caption (optional)</label>
                 <input id="caption" type="text" placeholder="Caption for the photo" />
-                <button type="submit">Send Photo</button>
+                <input id="photo_path" type="hidden" />
+                <button id="send_photo_btn" type="submit">Send Photo</button>
             </form>
         </div>
+
+        <form onsubmit="sendVideo(event)" style="margin-top: 16px;">
+            <h3>Send Video</h3>
+            <label for="video_url">Video URL</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input id="video_url" type="text" placeholder="https://example.com/video.mp4" />
+                <button type="button" onclick="copyToClipboard('video_url')">Copy</button>
+                <button type="button" onclick="openInNewTab('video_url')">Open</button>
+            </div>
+            <div style="margin-top:8px;">
+                <input id="video_file" type="file" accept="video/*" />
+                <button type="button" onclick="uploadVideoFile()" style="margin-left:8px;">Upload file</button>
+                <div id="video_progress" class="progress" style="max-width: 240px;"><span></span></div>
+            </div>
+            <label for="video_caption">Caption (optional)</label>
+            <input id="video_caption" type="text" placeholder="Caption for the video" />
+            <input id="video_path" type="hidden" />
+            <button id="send_video_btn" type="submit">Send Video</button>
+        </form>
 
         <form onsubmit="sendAndPin(event)" style="margin-top: 16px;">
             <h3>Send & Pin Message</h3>
             <label for="pin_text">Text to pin</label>
             <textarea id="pin_text" rows="3" placeholder="Message to pin in chats..."></textarea>
-            <button type="submit">Send & Pin</button>
+            <button id="send_pin_btn" type="submit">Send & Pin</button>
         </form>
         <form onsubmit="sendToChat(event)" style="margin-top: 16px;">
             <h3>Reply to a Specific Chat</h3>
@@ -204,7 +298,7 @@
             <input id="chat_id" type="text" placeholder="Telegram chat ID (e.g., 123456789)" />
             <label for="chat_text">Message</label>
             <textarea id="chat_text" rows="3" placeholder="Type your reply..."></textarea>
-            <button type="submit">Send Reply</button>
+            <button id="send_reply_btn" type="submit">Send Reply</button>
         </form>
     </div>
   </body>

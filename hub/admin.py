@@ -1,9 +1,44 @@
 from django.contrib import admin
+from django import forms
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.utils import timezone
+from django.conf import settings
 from .models import Bot, BotUser, Campaign, CampaignMessage, CampaignAssignment, SendLog, WebhookEvent, MessageLog
+
+
+class BotAdminForm(forms.ModelForm):
+    image_upload = forms.ImageField(required=False, help_text="Upload to set image_url automatically")
+
+    class Meta:
+        model = Bot
+        fields = ["name", "token", "is_active", "admin_chat_id", "description", "image_url", "image_upload"]
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        uploaded = self.cleaned_data.get("image_upload")
+        if uploaded:
+            path = default_storage.save(
+                f"uploads/{timezone.now().strftime('%Y%m%d_%H%M%S')}_{uploaded.name}",
+                ContentFile(uploaded.read())
+            )
+            try:
+                url = default_storage.url(path)
+            except Exception:
+                # Fallback to MEDIA_URL
+                if path.startswith('uploads/'):
+                    url = settings.MEDIA_URL + path.split('uploads/')[-1]
+                else:
+                    url = settings.MEDIA_URL + path
+            instance.image_url = url
+        if commit:
+            instance.save()
+        return instance
 
 
 @admin.register(Bot)
 class BotAdmin(admin.ModelAdmin):
+    form = BotAdminForm
     list_display = ("name", "is_active", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "token")

@@ -13,6 +13,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.http import StreamingHttpResponse
+import mimetypes
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -112,7 +113,7 @@ def upload_photo(request: HttpRequest) -> JsonResponse:
             url = request.build_absolute_uri(default_storage.url(path))
         except Exception:
             pass
-    return JsonResponse({'ok': True, 'url': url})
+    return JsonResponse({'ok': True, 'url': url, 'path': path})
 
 
 @login_required()
@@ -879,6 +880,8 @@ def broadcast_all(request: HttpRequest) -> JsonResponse:
     
     ok_count = 0
     fail_count = 0
+    failures = []
+    failures = []
 
     for user in users:
         try:
@@ -984,10 +987,11 @@ def broadcast_action(request: HttpRequest) -> JsonResponse:
 
     Body JSON:
     - bot_id or bot_token
-    - action: 'text' | 'poll' | 'photo' | 'pin'
+    - action: 'text' | 'poll' | 'photo' | 'video' | 'pin'
     - text: used for 'text' and 'pin' (message to send and pin)
     - photo: URL (for 'photo')
-    - caption: optional (for 'photo')
+    - caption: optional (for 'photo' and 'video')
+    - video: URL (for 'video')
     - question: poll question (for 'poll')
     - options: list[str] poll options (for 'poll')
     - is_anonymous: optional bool (for 'poll')
@@ -1017,6 +1021,7 @@ def broadcast_action(request: HttpRequest) -> JsonResponse:
 
     ok_count = 0
     fail_count = 0
+    failures = []
 
     for u in users:
         try:
@@ -1031,17 +1036,102 @@ def broadcast_action(request: HttpRequest) -> JsonResponse:
                 )
             elif action == 'photo':
                 photo = (data.get('photo') or '').strip()
-                if not photo:
-                    return JsonResponse({'error': 'photo required for action=photo'}, status=400)
+                photo_path = (data.get('photo_path') or '').strip()
+                if not photo and not photo_path:
+                    return JsonResponse({'error': 'photo or photo_path required for action=photo'}, status=400)
                 caption = data.get('caption')
-                payload = {'chat_id': u.telegram_id, 'photo': photo}
-                if caption:
-                    payload['caption'] = caption
-                resp = requests.post(
-                    f"https://api.telegram.org/bot{bot.token}/sendPhoto",
-                    json=payload,
-                    timeout=15,
-                )
+                if photo_path:
+                    try:
+                        file_obj = default_storage.open(photo_path, 'rb')
+                    except Exception:
+                        photo_path = ''
+                    if photo_path:
+                        filename = photo_path.split('/')[-1]
+                        mime, _ = mimetypes.guess_type(filename)
+                        files = {
+                            'photo': (filename, file_obj, mime or 'application/octet-stream')
+                        }
+                        data_fields = {'chat_id': str(u.telegram_id)}
+                        if caption:
+                            data_fields['caption'] = caption
+                        resp = requests.post(
+                            f"https://api.telegram.org/bot{bot.token}/sendPhoto",
+                            data=data_fields,
+                            files=files,
+                            timeout=60,
+                        )
+                        try:
+                            file_obj.close()
+                        except Exception:
+                            pass
+                    else:
+                        payload = {'chat_id': u.telegram_id, 'photo': photo}
+                        if caption:
+                            payload['caption'] = caption
+                        resp = requests.post(
+                            f"https://api.telegram.org/bot{bot.token}/sendPhoto",
+                            json=payload,
+                            timeout=20,
+                        )
+                else:
+                    payload = {'chat_id': u.telegram_id, 'photo': photo}
+                    if caption:
+                        payload['caption'] = caption
+                    resp = requests.post(
+                        f"https://api.telegram.org/bot{bot.token}/sendPhoto",
+                        json=payload,
+                        timeout=20,
+                    )
+            elif action == 'video':
+                video = (data.get('video') or '').strip()
+                video_path = (data.get('video_path') or '').strip()
+                if not video and not video_path:
+                    return JsonResponse({'error': 'video or video_path required for action=video'}, status=400)
+                caption = data.get('caption')
+                if video_path:
+                    # Upload the actual file to Telegram
+                    try:
+                        file_obj = default_storage.open(video_path, 'rb')
+                    except Exception:
+                        # Fallback to URL if path invalid
+                        video_path = ''
+                    if video_path:
+                        filename = video_path.split('/')[-1]
+                        mime, _ = mimetypes.guess_type(filename)
+                        files = {
+                            'video': (filename, file_obj, mime or 'application/octet-stream')
+                        }
+                        data_fields = {'chat_id': str(u.telegram_id)}
+                        if caption:
+                            data_fields['caption'] = caption
+                        resp = requests.post(
+                            f"https://api.telegram.org/bot{bot.token}/sendVideo",
+                            data=data_fields,
+                            files=files,
+                            timeout=60,
+                        )
+                        try:
+                            file_obj.close()
+                        except Exception:
+                            pass
+                    else:
+                        payload = {'chat_id': u.telegram_id, 'video': video}
+                        if caption:
+                            payload['caption'] = caption
+                        resp = requests.post(
+                            f"https://api.telegram.org/bot{bot.token}/sendVideo",
+                            json=payload,
+                            timeout=30,
+                        )
+                else:
+                    payload = {'chat_id': u.telegram_id, 'video': video}
+                    if caption:
+                        payload['caption'] = caption
+                    resp = requests.post(
+                        f"https://api.telegram.org/bot{bot.token}/sendVideo",
+                        json=payload,
+                        timeout=30,
+                    )
             elif action == 'poll':
                 question = (data.get('question') or '').strip()
                 options = data.get('options') or []
@@ -1096,10 +1186,16 @@ def broadcast_action(request: HttpRequest) -> JsonResponse:
                 ok_count += 1
             else:
                 fail_count += 1
+                failures.append({
+                    'chat_id': u.telegram_id,
+                    'error': js.get('description') or 'Unknown error',
+                    'action': action,
+                })
         except Exception:
             fail_count += 1
+            failures.append({'chat_id': u.telegram_id, 'error': 'Unhandled exception', 'action': action})
 
-    return JsonResponse({'ok': True, 'action': action, 'sent': ok_count, 'failed': fail_count})
+    return JsonResponse({'ok': True, 'action': action, 'sent': ok_count, 'failed': fail_count, 'failures': failures})
 
 
 # Debug endpoint
