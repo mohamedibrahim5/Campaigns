@@ -116,6 +116,7 @@
         }
         function uploadPhotoFile() { uploadWithProgress('file', 'photo', 'photo_progress', 'photo_path'); }
         function uploadVideoFile() { uploadWithProgress('video_file', 'video_url', 'video_progress', 'video_path'); }
+        function uploadDocumentFile() { uploadWithProgress('document_file', 'document_url', 'document_progress', 'document_path'); }
         function copyToClipboard(inputId) {
             const val = document.getElementById(inputId).value.trim();
             if (!val) { alert('No URL to copy'); return; }
@@ -141,6 +142,23 @@
                 const err = (js.failures && js.failures[0] && js.failures[0].error) ? ('\nError: ' + js.failures[0].error) : '';
                 alert('Video broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')' + err);
                 btn.disabled = false; btn.innerText = prev;
+            } catch (e) { alert(e.message); }
+        }
+        async function sendDocument(evt) {
+            evt.preventDefault();
+            const botId = document.getElementById('bot').value;
+            const docUrl = document.getElementById('document_url').value.trim();
+            const documentPath = document.getElementById('document_path').value.trim();
+            const caption = document.getElementById('document_caption').value.trim();
+            if (!botId || (!docUrl && !documentPath)) return alert('Select a bot and provide a document URL or upload a file');
+            try {
+                const btn = document.getElementById('send_document_btn');
+                const prev = btn ? btn.innerText : '';
+                if (btn) { btn.disabled = true; btn.innerText = 'Sending ...'; }
+                const js = await postJSON('/hub/broadcast_action/', { bot_id: Number(botId), action: 'document', document: docUrl, document_path: documentPath, caption });
+                const err = (js.failures && js.failures[0] && js.failures[0].error) ? ('\nError: ' + js.failures[0].error) : '';
+                alert('Document broadcast sent to ' + js.sent + ' users (failed: ' + js.failed + ')' + err);
+                if (btn) { btn.disabled = false; btn.innerText = prev; }
             } catch (e) { alert(e.message); }
         }
         async function sendToChat(evt) {
@@ -291,6 +309,24 @@
             <label for="pin_text">Text to pin</label>
             <textarea id="pin_text" rows="3" placeholder="Message to pin in chats..."></textarea>
             <button id="send_pin_btn" type="submit">Send & Pin</button>
+        </form>
+        <form onsubmit="sendDocument(event)" style="margin-top: 16px;">
+            <h3>Send Document</h3>
+            <label for="document_url">Document URL</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input id="document_url" type="text" placeholder="https://example.com/file.pdf" />
+                <button type="button" onclick="copyToClipboard('document_url')">Copy</button>
+                <button type="button" onclick="openInNewTab('document_url')">Open</button>
+            </div>
+            <div style="margin-top:8px;">
+                <input id="document_file" type="file" />
+                <button type="button" onclick="uploadDocumentFile()" style="margin-left:8px;">Upload file</button>
+                <div id="document_progress" class="progress" style="max-width: 240px;"><span></span></div>
+            </div>
+            <label for="document_caption">Caption (optional)</label>
+            <input id="document_caption" type="text" placeholder="Caption for the file" />
+            <input id="document_path" type="hidden" />
+            <button id="send_document_btn" type="submit">Send Document</button>
         </form>
         <form onsubmit="sendToChat(event)" style="margin-top: 16px;">
             <h3>Reply to a Specific Chat</h3>

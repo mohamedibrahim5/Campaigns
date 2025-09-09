@@ -136,20 +136,62 @@ class Command(BaseCommand):
                     bot=bot,
                     telegram_id=chat_id,
                     defaults={
-                        'username': from_user.get('username'),
-                        'first_name': from_user.get('first_name'),
-                        'last_name': from_user.get('last_name'),
-                        'language_code': from_user.get('language_code'),
+                        'username': from_user.get('username') or chat.get('username'),
+                        'first_name': from_user.get('first_name') or chat.get('first_name'),
+                        'last_name': from_user.get('last_name') or chat.get('last_name'),
+                        'language_code': from_user.get('language_code') or chat.get('language_code'),
                         'last_seen_at': timezone.now(),
                     }
                 )
-                if not created:
-                    bot_user.last_seen_at = timezone.now()
-                    bot_user.save(update_fields=['last_seen_at'])
+                # Update missing/changed profile fields when provided
+                update_fields = []
+                for field, value in {
+                    'username': from_user.get('username') or chat.get('username'),
+                    'first_name': from_user.get('first_name') or chat.get('first_name'),
+                    'last_name': from_user.get('last_name') or chat.get('last_name'),
+                    'language_code': from_user.get('language_code') or chat.get('language_code'),
+                }.items():
+                    if value and getattr(bot_user, field) != value:
+                        setattr(bot_user, field, value)
+                        update_fields.append(field)
+                bot_user.last_seen_at = timezone.now()
+                update_fields.append('last_seen_at')
+                if update_fields:
+                    bot_user.save(update_fields=update_fields)
 
                 text = (msg.get('text') or '').strip()
 
-                # On /start: send pinned intro with button, set awaiting state
+                # Save phone number if contact message
+                contact = msg.get('contact') or {}
+                if contact:
+                    try:
+                        self.stdout.write(self.style.WARNING("=== CONTACT RECEIVED (polling) ==="))
+                        self.stdout.write(json.dumps(contact, indent=2))
+                    except Exception:
+                        self.stdout.write(str(contact))
+                    phone = (contact.get('phone_number') or '').strip()
+                    target_user_id = contact.get('user_id') or from_user.get('id') or chat_id
+                    try:
+                        bu, _ = BotUser.objects.get_or_create(
+                            bot=bot,
+                            telegram_id=target_user_id,
+                            defaults={
+                                'username': from_user.get('username') or chat.get('username'),
+                                'first_name': from_user.get('first_name') or chat.get('first_name'),
+                                'last_name': from_user.get('last_name') or chat.get('last_name'),
+                                'language_code': from_user.get('language_code') or chat.get('language_code'),
+                            }
+                        )
+                        if phone and (not bu.phone_number or bu.phone_number != phone):
+                            bu.phone_number = phone
+                            bu.save(update_fields=['phone_number'])
+                            self.stdout.write(self.style.SUCCESS(f"✓ Saved phone for user {bu.telegram_id}: {phone}"))
+                        else:
+                            self.stdout.write(self.style.NOTICE(f"No phone saved. Existing={bu.phone_number!r} Incoming={phone!r}"))
+                    except Exception as ex:
+                        self.stderr.write(f"Error saving phone number: {ex}")
+
+                # On /start: send pinned intro with button, set awaiting state, and request contact
                 if text.startswith('/start'):
                     if not bot_user.started_at:
                         bot_user.started_at = timezone.now()
@@ -195,6 +237,26 @@ class Command(BaseCommand):
                                 self.stderr.write(f"Error pinning message: {ex}")
                     except Exception as ex:
                         self.stderr.write(f"Error sending intro/button: {ex}")
+
+                    # a7aa7a 
+
+                    # # Prompt for contact share to capture phone number
+                    # try:
+                    #     requests.post(
+                    #         f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    #         json={
+                    #             'chat_id': chat_id,
+                    #             'text': 'Please share your phone number to complete registration.',
+                    #             'reply_markup': {
+                    #                 'keyboard': [[{'text': 'Share my phone number', 'request_contact': True}]],
+                    #                 'resize_keyboard': True,
+                    #                 'one_time_keyboard': True,
+                    #             }
+                    #         },
+                    #         timeout=10,
+                    #     )
+                    # except Exception as ex:
+                    #     self.stderr.write(f"Error requesting contact: {ex}")
 
                 else:
                     # Gate messages until enabled

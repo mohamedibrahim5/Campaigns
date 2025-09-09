@@ -21,6 +21,7 @@ class BotUser(models.Model):
     username = models.CharField(max_length=150, blank=True, null=True)
     first_name = models.CharField(max_length=150, blank=True, null=True)
     last_name = models.CharField(max_length=150, blank=True, null=True)
+    phone_number = models.CharField(max_length=32, blank=True, null=True)
     language_code = models.CharField(max_length=10, blank=True, null=True)
     is_blocked = models.BooleanField(default=False)
     joined_at = models.DateTimeField(auto_now_add=True)

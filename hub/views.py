@@ -126,7 +126,7 @@ def bot_logs_html(request: HttpRequest, bot_id: int) -> HttpResponse:
     user = request.user
     if not (user.is_superuser or (not user.is_superuser and bot_id == 2)):
         return HttpResponse("Forbidden", status=403)
-    logs = MessageLog.objects.filter(bot=bot).order_by('-received_at')[:500]
+    logs = MessageLog.objects.filter(bot=bot).select_related('bot_user').order_by('-received_at')[:500]
     return render(request, 'hub/logs.html', {'bot': bot, 'logs': logs})
 
 
@@ -147,7 +147,7 @@ def bot_logs_pdf(request: HttpRequest, bot_id: int):
     except Exception:
         return JsonResponse({'error': 'PDF export requires reportlab. Install with: pip install reportlab'}, status=501)
 
-    logs = MessageLog.objects.filter(bot=bot).order_by('-received_at')[:1000]
+    logs = MessageLog.objects.filter(bot=bot).select_related('bot_user').order_by('-received_at')[:1000]
 
     def pdf_generator():
         from io import BytesIO
@@ -162,7 +162,8 @@ def bot_logs_pdf(request: HttpRequest, bot_id: int):
         y -= 12 * mm
         c.setFont("Helvetica", 9)
         for log in logs:
-            line = f"{log.received_at.strftime('%Y-%m-%d %H:%M:%S')} | chat={log.chat_id} | msg={log.message_id or '-'} | { (log.text or '')[:1000] }"
+            phone = (getattr(log.bot_user, 'phone_number', None) or '') if log.bot_user else ''
+            line = f"{log.received_at.strftime('%Y-%m-%d %H:%M:%S')} | chat={log.chat_id} | phone={phone or '-'} | msg={log.message_id or '-'} | {(log.text or '')[:1000]}"
             # Wrap long lines
             max_width = width - 2 * margin
             words = line.split(' ')
@@ -500,13 +501,43 @@ def telegram_webhook(request: HttpRequest, bot_id: int) -> JsonResponse:
     message = payload.get('message') or payload.get('edited_message') or {}
     print(f"Message data: {json.dumps(message, indent=2)}")
 
-    # Persist message into MessageLog if present
+    # Persist message into MessageLog if present and capture phone numbers from contact messages
     try:
         if message:
             chat = message.get('chat', {})
             from_user = message.get('from', {})
             chat_id = chat.get('id')
             bot_user = BotUser.objects.filter(bot=bot, telegram_id=chat_id).first() if chat_id else None
+            # If message contains a contact, store phone_number on BotUser
+            contact = message.get('contact') or {}
+            if contact:
+                try:
+                    print("=== CONTACT RECEIVED ===")
+                    try:
+                        print(json.dumps(contact, indent=2))
+                    except Exception:
+                        print(str(contact))
+                    target_user_id = contact.get('user_id') or from_user.get('id') or chat_id
+                    bu, _ = BotUser.objects.get_or_create(
+                        bot=bot,
+                        telegram_id=target_user_id or chat_id or 0,
+                        defaults={
+                            'username': from_user.get('username') or chat.get('username'),
+                            'first_name': from_user.get('first_name') or chat.get('first_name'),
+                            'last_name': from_user.get('last_name') or chat.get('last_name'),
+                            'language_code': from_user.get('language_code') or chat.get('language_code'),
+                        }
+                    )
+                    phone = (contact.get('phone_number') or '').strip()
+                    if phone and bu.phone_number != phone:
+                        bu.phone_number = phone
+                        bu.save(update_fields=['phone_number'])
+                        print(f"✓ Saved phone number for user {bu.telegram_id}: {phone}")
+                    else:
+                        print(f"No phone saved. Existing={bu.phone_number!r} Incoming={phone!r}")
+                    bot_user = bu
+                except Exception as e:
+                    print(f"Error saving phone number: {e}")
             MessageLog.objects.create(
                 bot=bot,
                 bot_user=bot_user,
@@ -531,10 +562,6 @@ def telegram_webhook(request: HttpRequest, bot_id: int) -> JsonResponse:
         from_user = message.get('from', {})
         chat_id = chat.get('id')
         
-        print(f"Chat info: {json.dumps(chat, indent=2)}")
-        print(f"From user info: {json.dumps(from_user, indent=2)}")
-        print(f"Chat ID: {chat_id}")
-        
         if not chat_id:
             print("ERROR: No chat_id found!")
             return JsonResponse({'ok': False, 'error': 'No chat_id'})
@@ -553,6 +580,26 @@ def telegram_webhook(request: HttpRequest, bot_id: int) -> JsonResponse:
             print(f"Welcome message response: {welcome_response.text}")
         except Exception as e:
             print(f"Error sending welcome message: {e}")
+
+        # Ask user to share their contact (phone number)
+        try:
+            contact_prompt = requests.post(
+                f"https://api.telegram.org/bot{bot.token}/sendMessage",
+                json={
+                    'chat_id': chat_id,
+                    'text': 'Please share your phone number to complete registration.',
+                    'reply_markup': {
+                        'keyboard': [[{'text': 'Share my phone number', 'request_contact': True}]],
+                        'resize_keyboard': True,
+                        'one_time_keyboard': True
+                    }
+                },
+                timeout=10
+            )
+            print(f"Contact request status: {contact_prompt.status_code}")
+            print(f"Contact request response: {contact_prompt.text}")
+        except Exception as e:
+            print(f"Error requesting contact: {e}")
         
         # Register/update user
         try:
@@ -617,6 +664,13 @@ def telegram_webhook(request: HttpRequest, bot_id: int) -> JsonResponse:
             # Verify the user was saved correctly
             saved_user = BotUser.objects.get(bot=bot, telegram_id=chat_id)
             print(f"✓ VERIFICATION: User saved with started_at={saved_user.started_at}, blocked={saved_user.is_blocked}")
+
+            # If Telegram unexpectedly includes phone in from_user (rare), save it
+            possible_phone = (from_user.get('phone_number') or '').strip()
+            if possible_phone and saved_user.phone_number != possible_phone:
+                saved_user.phone_number = possible_phone
+                saved_user.save(update_fields=['phone_number'])
+                print("✓ Phone number saved from from_user payload")
             
             # Count total active users for this bot
             active_count = BotUser.objects.filter(
@@ -987,7 +1041,7 @@ def broadcast_action(request: HttpRequest) -> JsonResponse:
 
     Body JSON:
     - bot_id or bot_token
-    - action: 'text' | 'poll' | 'photo' | 'video' | 'pin'
+    - action: 'text' | 'poll' | 'photo' | 'video' | 'document' | 'pin'
     - text: used for 'text' and 'pin' (message to send and pin)
     - photo: URL (for 'photo')
     - caption: optional (for 'photo' and 'video')
@@ -1131,6 +1185,54 @@ def broadcast_action(request: HttpRequest) -> JsonResponse:
                         f"https://api.telegram.org/bot{bot.token}/sendVideo",
                         json=payload,
                         timeout=30,
+                    )
+            elif action == 'document':
+                document = (data.get('document') or '').strip()
+                document_path = (data.get('document_path') or '').strip()
+                if not document and not document_path:
+                    return JsonResponse({'error': 'document or document_path required for action=document'}, status=400)
+                caption = data.get('caption')
+                if document_path:
+                    try:
+                        file_obj = default_storage.open(document_path, 'rb')
+                    except Exception:
+                        document_path = ''
+                    if document_path:
+                        filename = document_path.split('/')[-1]
+                        mime, _ = mimetypes.guess_type(filename)
+                        files = {
+                            'document': (filename, file_obj, mime or 'application/octet-stream')
+                        }
+                        data_fields = {'chat_id': str(u.telegram_id)}
+                        if caption:
+                            data_fields['caption'] = caption
+                        resp = requests.post(
+                            f"https://api.telegram.org/bot{bot.token}/sendDocument",
+                            data=data_fields,
+                            files=files,
+                            timeout=60,
+                        )
+                        try:
+                            file_obj.close()
+                        except Exception:
+                            pass
+                    else:
+                        payload = {'chat_id': u.telegram_id, 'document': document}
+                        if caption:
+                            payload['caption'] = caption
+                        resp = requests.post(
+                            f"https://api.telegram.org/bot{bot.token}/sendDocument",
+                            json=payload,
+                            timeout=20,
+                        )
+                else:
+                    payload = {'chat_id': u.telegram_id, 'document': document}
+                    if caption:
+                        payload['caption'] = caption
+                    resp = requests.post(
+                        f"https://api.telegram.org/bot{bot.token}/sendDocument",
+                        json=payload,
+                        timeout=20,
                     )
             elif action == 'poll':
                 question = (data.get('question') or '').strip()

@@ -27,6 +27,7 @@
       <tr>
         <th>Time</th>
         <th>Chat</th>
+        <th>Phone</th>
         <th>Message ID</th>
         <th>Text</th>
       </tr>
@@ -36,6 +37,7 @@
       <tr>
         <td>{{ log.received_at }}</td>
         <td>{{ log.chat_id }}</td>
+        <td>{% if log.bot_user and log.bot_user.phone_number %}{{ log.bot_user.phone_number }}{% else %}-{% endif %}</td>
         <td>{{ log.message_id }}</td>
         <td style="white-space: pre-wrap;">{{ log.text }}</td>
       </tr>

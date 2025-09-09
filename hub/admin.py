@@ -46,9 +46,9 @@ class BotAdmin(admin.ModelAdmin):
 
 @admin.register(BotUser)
 class BotUserAdmin(admin.ModelAdmin):
-    list_display = ("bot", "telegram_id", "username", "language_code", "is_blocked", "joined_at")
+    list_display = ("bot", "telegram_id", "username", "phone_number", "language_code", "is_blocked", "joined_at")
     list_filter = ("bot", "is_blocked", "language_code")
-    search_fields = ("telegram_id", "username", "first_name", "last_name")
+    search_fields = ("telegram_id", "username", "first_name", "last_name", "phone_number")
 
 
 class CampaignMessageInline(admin.TabularInline):
