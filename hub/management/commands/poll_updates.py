@@ -117,6 +117,24 @@ class Command(BaseCommand):
                             )
                         except Exception as ex:
                             self.stderr.write(f"Error sending enabled message: {ex}")
+                    elif data == 'request_contact_btn':
+                        # Show a reply keyboard that requests contact
+                        try:
+                            requests.post(
+                                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                                json={
+                                    'chat_id': cq_chat_id,
+                                    'text': 'Please tap the button below to share your phone number.',
+                                    'reply_markup': {
+                                        'keyboard': [[{'text': 'Share my phone number', 'request_contact': True}]],
+                                        'resize_keyboard': True,
+                                        'one_time_keyboard': True,
+                                    }
+                                },
+                                timeout=10,
+                            )
+                        except Exception as ex:
+                            self.stderr.write(f"Error sending contact request keyboard: {ex}")
 
                     # Continue to next update after handling callback
                     continue
@@ -186,6 +204,30 @@ class Command(BaseCommand):
                             bu.phone_number = phone
                             bu.save(update_fields=['phone_number'])
                             self.stdout.write(self.style.SUCCESS(f"✓ Saved phone for user {bu.telegram_id}: {phone}"))
+                            # Hide the contact keyboard and unpin the request message(s)
+                            try:
+                                requests.post(
+                                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                                    json={
+                                        'chat_id': chat_id,
+                                        'text': 'Thanks! Your phone number was received.',
+                                        'reply_markup': { 'remove_keyboard': True },
+                                    },
+                                    timeout=10,
+                                )
+                            except Exception as ex:
+                                self.stderr.write(f"Error sending confirmation/hiding keyboard: {ex}")
+                            try:
+                                # Unpin all to clean up the pinned prompt if present
+                                requests.post(
+                                    f"https://api.telegram.org/bot{bot_token}/unpinAllChatMessages",
+                                    json={
+                                        'chat_id': chat_id,
+                                    },
+                                    timeout=10,
+                                )
+                            except Exception as ex:
+                                self.stderr.write(f"Error unpinning messages: {ex}")
                         else:
                             self.stdout.write(self.style.NOTICE(f"No phone saved. Existing={bu.phone_number!r} Incoming={phone!r}"))
                     except Exception as ex:
@@ -199,7 +241,7 @@ class Command(BaseCommand):
                     bot_user.save(update_fields=['started_at', 'state'] if bot_user.started_at else ['state'])
 
                     intro_text = (
-                        "Welcome! Press the button below to start asking about campaigns/candidates."
+                        "Welcome! Use the buttons below to ask a question or share your phone number."
                     )
                     try:
                         send_resp = requests.post(
@@ -208,12 +250,18 @@ class Command(BaseCommand):
                                 'chat_id': chat_id,
                                 'text': intro_text,
                                 'reply_markup': {
-                                    'inline_keyboard': [[
-                                        {
-                                            'text': 'Ask a question',
-                                            'callback_data': 'enable_questions'
-                                        }
-                                    ]]
+                                    'inline_keyboard': [
+                                        [
+                                            {
+                                                'text': 'Ask a question',
+                                                'callback_data': 'enable_questions'
+                                            },
+                                            {
+                                                'text': 'Share my phone number',
+                                                'callback_data': 'request_contact_btn'
+                                            }
+                                        ]
+                                    ]
                                 },
                             },
                             timeout=10,
@@ -240,23 +288,7 @@ class Command(BaseCommand):
 
                     # a7aa7a 
 
-                    # # Prompt for contact share to capture phone number
-                    # try:
-                    #     requests.post(
-                    #         f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    #         json={
-                    #             'chat_id': chat_id,
-                    #             'text': 'Please share your phone number to complete registration.',
-                    #             'reply_markup': {
-                    #                 'keyboard': [[{'text': 'Share my phone number', 'request_contact': True}]],
-                    #                 'resize_keyboard': True,
-                    #                 'one_time_keyboard': True,
-                    #             }
-                    #         },
-                    #         timeout=10,
-                    #     )
-                    # except Exception as ex:
-                    #     self.stderr.write(f"Error requesting contact: {ex}")
+                    # No separate contact request is sent here; use the inline button above
 
                 else:
                     # Gate messages until enabled
