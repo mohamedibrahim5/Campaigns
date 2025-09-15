@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ candidate.name }} - لوحة التحكم</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+            direction: rtl;
+            text-align: right;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            background: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: #667eea;
+        }
+        
+        .nav-links button:hover {
+            color: #667eea !important;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 15px;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dashboard-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card h3 {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card p {
+            color: #666;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 15px 15px 0 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 0;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+            background: #f8f9fa;
+        }
+        
+        .tab-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .file-input {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .file-input label {
+            cursor: pointer;
+            display: block;
+            margin: 0;
+        }
+        
+        .file-input:hover {
+            background: #5a6fd8;
+        }
+        
+        .file-input input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .preview-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .preview-section h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .preview-link {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+        
+        .preview-link:hover {
+            background: #218838;
+        }
+        
+        .social-media-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .current-image {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+        }
+        
+        .data-table thead,
+        .data-table tbody,
+        .data-table tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 0.8rem;
+            text-align: right;
+            border-bottom: 1px solid #e9ecef;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .data-table td:first-child,
+        .data-table th:first-child {
+            width: 25%;
+        }
+        
+        .data-table td:nth-child(2),
+        .data-table th:nth-child(2) {
+            width: 15%;
+        }
+        
+        .data-table td:nth-child(3),
+        .data-table th:nth-child(3) {
+            width: 15%;
+        }
+        
+        .data-table td:nth-child(4),
+        .data-table th:nth-child(4) {
+            width: 15%;
+        }
+        
+        .data-table td:nth-child(5),
+        .data-table th:nth-child(5) {
+            width: 15%;
+        }
+        
+        .data-table td:last-child,
+        .data-table th:last-child {
+            width: 15%;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .options-list {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9fa;
+        }
+        
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .option-item input {
+            flex: 1;
+        }
+        
+        .add-option-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .add-option-btn:hover {
+            background: #218838;
+        }
+        
+        .remove-option-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .remove-option-btn:hover {
+            background: #c82333;
+        }
+        
+        @media (max-width: 768px) {
+            .social-media-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">🗳️ Election 360</div>
+            <ul class="nav-links">
+                <li><a href="/hub/candidate/{{ candidate.id }}/" target="_blank">عرض الصفحة العامة</a></li>
+                <!-- <li><a href="/hub/election-dashboard/">لوحة التحكم الرئيسية</a></li> -->
+                <li>
+                    <form method="post" action="/accounts/logout/" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" style="background: none; border: none; color: #333; font-weight: 500; cursor: pointer; text-decoration: none; transition: color 0.3s ease; padding: 0;">تسجيل الخروج</button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>لوحة تحكم {{ candidate.name }}</h1>
+            <p>إدارة ملفك الشخصي ومحتوى الحملة الانتخابية</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>{{ supporters_count }}</h3>
+                <p>المؤيدون</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ events|length }}</h3>
+                <p>الفعاليات</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ speeches|length }}</h3>
+                <p>الخطابات</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ polls|length }}</h3>
+                <p>الاستطلاعات</p>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <h3>معاينة الصفحة العامة</h3>
+            <p>شاهد كيف تبدو صفحتك العامة للناخبين:</p>
+            <a href="/hub/candidate/{{ candidate.id }}/" target="_blank" class="preview-link">عرض الصفحة العامة</a>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('profile')">الملف الشخصي</button>
+            <button class="tab" onclick="showTab('events')">الفعاليات</button>
+            <button class="tab" onclick="showTab('speeches')">الخطابات</button>
+            <button class="tab" onclick="showTab('polls')">الاستطلاعات</button>
+            <button class="tab" onclick="showTab('gallery')">المعرض</button>
+            <button class="tab" onclick="showTab('supporters')">المؤيدون</button>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="profile" class="tab-content active">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" style="background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="profile">
+                
+                <div class="card">
+                    <h2>المعلومات الأساسية</h2>
+                    
+                    <div class="form-group">
+                        <label for="name">الاسم الكامل</label>
+                        <input type="text" id="name" name="name" value="{{ candidate.name }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="position">المنصب</label>
+                        <input type="text" id="position" name="position" value="{{ candidate.position }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="party">الحزب السياسي</label>
+                        <input type="text" id="party" name="party" value="{{ candidate.party|default:'' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">البريد الإلكتروني</label>
+                        <input type="email" id="email" name="email" value="{{ candidate.email|default:'' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">الهاتف</label>
+                        <input type="tel" id="phone" name="phone" value="{{ candidate.phone|default:'' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="website">الموقع الإلكتروني</label>
+                        <input type="url" id="website" name="website" value="{{ candidate.website|default:'' }}">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>الصور الشخصية</h2>
+                    
+                    <div class="form-group">
+                        <label>الصورة الشخصية الحالية</label>
+                        {% if candidate.profile_image %}
+                            <img src="{{ candidate.profile_image.url }}" alt="الصورة الشخصية" class="current-image">
+                        {% else %}
+                            <p>لم يتم رفع صورة شخصية</p>
+                        {% endif %}
+                        <div class="file-input">
+                            <input type="file" name="profile_image" accept="image/*" id="profile_image_input">
+                            <label for="profile_image_input">📷 اختر صورة شخصية جديدة</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>الشعار الحالي</label>
+                        {% if candidate.logo %}
+                            <img src="{{ candidate.logo.url }}" alt="الشعار" class="current-image">
+                        {% else %}
+                            <p>لم يتم رفع شعار</p>
+                        {% endif %}
+                        <div class="file-input">
+                            <input type="file" name="logo" accept="image/*" id="logo_input">
+                            <label for="logo_input">🏷️ اختر شعار جديد</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>حول والبرنامج</h2>
+                    
+                    <div class="form-group">
+                        <label for="bio">السيرة الذاتية</label>
+                        <textarea id="bio" name="bio" placeholder="أخبر الناخبين عن نفسك، خلفيتك، ولماذا ترشح نفسك...">{{ candidate.bio|default:'' }}</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="program">البرنامج الانتخابي</label>
+                        <textarea id="program" name="program" placeholder="اوصف منصتك، السياسات الرئيسية، وما تخطط لتحقيقه...">{{ candidate.program|default:'' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>وسائل التواصل الاجتماعي</h2>
+                    
+                    <div class="social-media-grid">
+                        <div class="form-group">
+                            <label for="facebook">رابط فيسبوك</label>
+                            <input type="url" id="facebook" name="facebook" value="{{ candidate.social_media.facebook|default:'' }}" placeholder="https://facebook.com/yourpage">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="twitter">رابط تويتر</label>
+                            <input type="url" id="twitter" name="twitter" value="{{ candidate.social_media.twitter|default:'' }}" placeholder="https://twitter.com/yourhandle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="instagram">رابط إنستغرام</label>
+                            <input type="url" id="instagram" name="instagram" value="{{ candidate.social_media.instagram|default:'' }}" placeholder="https://instagram.com/yourhandle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="linkedin">رابط لينكد إن</label>
+                            <input type="url" id="linkedin" name="linkedin" value="{{ candidate.social_media.linkedin|default:'' }}" placeholder="https://linkedin.com/in/yourprofile">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button type="submit" class="btn">حفظ التغييرات</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Events Tab -->
+        <div id="events" class="tab-content">
+            <div class="card">
+                <h2>إضافة فعالية جديدة</h2>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_event">
+                    
+                    <div class="form-group">
+                        <label for="event_title">عنوان الفعالية</label>
+                        <input type="text" id="event_title" name="event_title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event_description">وصف الفعالية</label>
+                        <textarea id="event_description" name="event_description" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event_type">نوع الفعالية</label>
+                        <select id="event_type" name="event_type">
+                            <option value="meeting">اجتماع</option>
+                            <option value="conference">مؤتمر</option>
+                            <option value="rally">تجمع</option>
+                            <option value="debate">مناظرة</option>
+                            <option value="announcement">إعلان</option>
+                            <option value="other">أخرى</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event_location">الموقع</label>
+                        <input type="text" id="event_location" name="event_location" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event_start_datetime">تاريخ ووقت البداية</label>
+                        <input type="datetime-local" id="event_start_datetime" name="event_start_datetime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event_end_datetime">تاريخ ووقت النهاية (اختياري)</label>
+                        <input type="datetime-local" id="event_end_datetime" name="event_end_datetime">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event_max_attendees">الحد الأقصى للحضور (اختياري)</label>
+                        <input type="number" id="event_max_attendees" name="event_max_attendees" min="1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="event_is_public" name="event_is_public" checked>
+                            <label for="event_is_public">فعالية عامة</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>صورة الفعالية</label>
+                        <div class="file-input">
+                            <input type="file" name="event_image" accept="image/*">
+                            رفع صورة للفعالية
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">إضافة الفعالية</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>الفعاليات الحالية</h2>
+                {% if events %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>العنوان</th>
+                                <th>النوع</th>
+                                <th>التاريخ</th>
+                                <th>الموقع</th>
+                                <th>عامة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                            <tr>
+                                <td>{{ event.title }}</td>
+                                <td>{{ event.get_event_type_display }}</td>
+                                <td>{{ event.start_datetime|date:"Y-m-d H:i" }}</td>
+                                <td>{{ event.location }}</td>
+                                <td>{{ event.is_public|yesno:"نعم,لا" }}</td>
+                                <td>
+                                    <form method="post" style="display: inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذه الفعالية؟')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_event">
+                                        <input type="hidden" name="event_id" value="{{ event.id }}">
+                                        <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>لا توجد فعاليات حالياً</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Speeches Tab -->
+        <div id="speeches" class="tab-content">
+            <div class="card">
+                <h2>إضافة خطاب جديد</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_speech">
+                    
+                    <div class="form-group">
+                        <label for="speech_title">عنوان الخطاب</label>
+                        <input type="text" id="speech_title" name="speech_title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="speech_content">محتوى الخطاب</label>
+                        <textarea id="speech_content" name="speech_content" rows="10" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="speech_summary">ملخص الخطاب</label>
+                        <textarea id="speech_summary" name="speech_summary" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="speech_type">نوع الخطاب</label>
+                        <select id="speech_type" name="speech_type">
+                            <option value="campaign">حملة انتخابية</option>
+                            <option value="policy">سياسة</option>
+                            <option value="rally">تجمع</option>
+                            <option value="debate">مناظرة</option>
+                            <option value="other">أخرى</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="speech_ai_generated" name="speech_ai_generated">
+                            <label for="speech_ai_generated">مولد بالذكاء الاصطناعي</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">إضافة الخطاب</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>الخطابات الحالية</h2>
+                {% if speeches %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>العنوان</th>
+                                <th>النوع</th>
+                                <th>التاريخ</th>
+                                <th>الملخص</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for speech in speeches %}
+                            <tr>
+                                <td>{{ speech.title }}</td>
+                                <td>{{ speech.get_speech_type_display }}</td>
+                                <td>{{ speech.created_at|date:"Y-m-d" }}</td>
+                                <td>{{ speech.summary|truncatewords:10 }}</td>
+                                <td>
+                                    <form method="post" style="display: inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذا الخطاب؟')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_speech">
+                                        <input type="hidden" name="speech_id" value="{{ speech.id }}">
+                                        <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>لا توجد خطابات حالياً</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Polls Tab -->
+        <div id="polls" class="tab-content">
+            <div class="card">
+                <h2>إنشاء استطلاع جديد</h2>
+                <form method="post" id="poll-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_poll">
+                    
+                    <div class="form-group">
+                        <label for="poll_question">سؤال الاستطلاع</label>
+                        <input type="text" id="poll_question" name="poll_question" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>خيارات الاستطلاع</label>
+                        <div class="options-list" id="poll-options">
+                            <div class="option-item">
+                                <input type="text" name="poll_options" placeholder="الخيار الأول" required>
+                                <button type="button" class="remove-option-btn" onclick="removeOption(this)" style="display: none;">حذف</button>
+                            </div>
+                            <div class="option-item">
+                                <input type="text" name="poll_options" placeholder="الخيار الثاني" required>
+                                <button type="button" class="remove-option-btn" onclick="removeOption(this)">حذف</button>
+                            </div>
+                        </div>
+                        <button type="button" class="add-option-btn" onclick="addOption()">إضافة خيار</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="poll_is_anonymous" name="poll_is_anonymous" checked>
+                            <label for="poll_is_anonymous">استطلاع مجهول</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="poll_allows_multiple" name="poll_allows_multiple">
+                            <label for="poll_allows_multiple">السماح بإجابات متعددة</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="poll_expires_at">تاريخ انتهاء الاستطلاع (اختياري)</label>
+                        <input type="datetime-local" id="poll_expires_at" name="poll_expires_at">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">إنشاء الاستطلاع</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>الاستطلاعات الحالية</h2>
+                {% if polls %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>السؤال</th>
+                                <th>عدد الخيارات</th>
+                                <th>التاريخ</th>
+                                <th>مجهول</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for poll in polls %}
+                            <tr>
+                                <td>{{ poll.question }}</td>
+                                <td>{{ poll.options|length }}</td>
+                                <td>{{ poll.created_at|date:"Y-m-d" }}</td>
+                                <td>{{ poll.is_anonymous|yesno:"نعم,لا" }}</td>
+                                <td>
+                                    <form method="post" style="display: inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذا الاستطلاع؟')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_poll">
+                                        <input type="hidden" name="poll_id" value="{{ poll.id }}">
+                                        <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>لا توجد استطلاعات حالياً</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Gallery Tab -->
+        <div id="gallery" class="tab-content">
+            <div class="card">
+                <h2>إضافة عنصر جديد للمعرض</h2>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_gallery">
+                    
+                    <div class="form-group">
+                        <label for="gallery_title">عنوان العنصر</label>
+                        <input type="text" id="gallery_title" name="gallery_title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gallery_description">وصف العنصر</label>
+                        <textarea id="gallery_description" name="gallery_description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gallery_media_type">نوع الوسائط</label>
+                        <select id="gallery_media_type" name="gallery_media_type">
+                            <option value="image">صورة</option>
+                            <option value="video">فيديو</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>ملف الوسائط</label>
+                        <div class="file-input">
+                            <input type="file" name="gallery_file" accept="image/*,video/*" required>
+                            اختر ملف صورة أو فيديو
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="gallery_is_featured" name="gallery_is_featured">
+                            <label for="gallery_is_featured">عرض في المقدمة</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="gallery_is_public" name="gallery_is_public" checked>
+                            <label for="gallery_is_public">عرض للعامة</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">إضافة للمعرض</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>عناصر المعرض الحالية</h2>
+                {% if gallery_items %}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+                        {% for item in gallery_items %}
+                        <div style="background: #f8f9fa; border-radius: 10px; padding: 15px; border: 1px solid #e9ecef;">
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                {% if item.media_type == 'image' %}
+                                    <img src="{{ item.file.url }}" alt="{{ item.title }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;">
+                                {% else %}
+                                    <video controls style="width: 100%; height: 150px; border-radius: 8px;">
+                                        <source src="{{ item.file.url }}" type="video/mp4">
+                                        متصفحك لا يدعم تشغيل الفيديو.
+                                    </video>
+                                {% endif %}
+                            </div>
+                            <h4 style="margin: 10px 0; color: #667eea;">{{ item.title }}</h4>
+                            {% if item.description %}
+                                <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">{{ item.description|truncatewords:15 }}</p>
+                            {% endif %}
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="background: {% if item.media_type == 'image' %}#28a745{% else %}#dc3545{% endif %}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">
+                                    {{ item.get_media_type_display }}
+                                </span>
+                                {% if item.is_featured %}
+                                    <span style="background: #ffc107; color: #333; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">مميز</span>
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <form method="post" style="flex: 1;" onsubmit="return confirm('هل أنت متأكد من حذف هذا العنصر؟')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_gallery">
+                                    <input type="hidden" name="gallery_id" value="{{ item.id }}">
+                                    <button type="submit" class="btn btn-danger" style="width: 100%; padding: 5px; font-size: 0.8rem;">حذف</button>
+                                </form>
+                                <a href="{{ item.file.url }}" target="_blank" class="btn btn-secondary" style="flex: 1; padding: 5px; font-size: 0.8rem; text-align: center;">عرض</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🖼️</div>
+                        <h3 style="color: #667eea; margin-bottom: 0.5rem;">لا توجد عناصر في المعرض</h3>
+                        <p>أضف صور وفيديوهات لعرضها على صفحتك العامة</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Supporters Tab -->
+        <div id="supporters" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>قائمة المؤيدين</h2>
+                    {% if supporters %}
+                        <button onclick="exportSupportersPDF()" class="btn" style="background: #dc3545; display: flex; align-items: center; gap: 8px;">
+                            📄 تصدير PDF
+                        </button>
+                    {% endif %}
+                </div>
+                {% if supporters %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>الرقم القومي</th>
+                                <th>الهاتف</th>
+                                <th>المدينة</th>
+                                <th>مستوى الدعم</th>
+                                <th>تاريخ الانضمام</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for supporter in supporters %}
+                            <tr>
+                                <td>
+                                    {% if supporter.bot_user.first_name or supporter.bot_user.last_name %}
+                                        {{ supporter.bot_user.first_name }} {{ supporter.bot_user.last_name }}
+                                    {% else %}
+                                        {{ supporter.bot_user.username|default:"-" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if supporter.notes and "National ID:" in supporter.notes %}
+                                        {{ supporter.notes|slice:"-14:" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ supporter.bot_user.phone_number|default:"-" }}</td>
+                                <td>{{ supporter.city|default:"-" }}</td>
+                                <td>
+                                    {% if supporter.support_level == 1 %}
+                                        <span style="color: #28a745; font-weight: bold;">{{ supporter.get_support_level_display }}</span>
+                                    {% elif supporter.support_level == 2 %}
+                                        <span style="color: #ffc107; font-weight: bold;">{{ supporter.get_support_level_display }}</span>
+                                    {% elif supporter.support_level == 3 %}
+                                        <span style="color: #dc3545; font-weight: bold;">{{ supporter.get_support_level_display }}</span>
+                                    {% else %}
+                                        <span style="color: #6c757d; font-weight: bold;">{{ supporter.get_support_level_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ supporter.registered_at|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+                        <h3 style="color: #667eea; margin-bottom: 0.5rem;">لا يوجد مؤيدون حالياً</h3>
+                        <p>سيظهر المؤيدون هنا عند قيام الأشخاص بدعمك من الصفحة العامة</p>
+                        <a href="/hub/candidate/{{ candidate.id }}/" target="_blank" class="btn" style="margin-top: 1rem;">عرض الصفحة العامة</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Poll options management
+        function addOption() {
+            const optionsList = document.getElementById('poll-options');
+            const newOption = document.createElement('div');
+            newOption.className = 'option-item';
+            newOption.innerHTML = `
+                <input type="text" name="poll_options" placeholder="خيار جديد" required>
+                <button type="button" class="remove-option-btn" onclick="removeOption(this)">حذف</button>
+            `;
+            optionsList.appendChild(newOption);
+            updateRemoveButtons();
+        }
+
+        function removeOption(button) {
+            button.parentElement.remove();
+            updateRemoveButtons();
+        }
+
+        function updateRemoveButtons() {
+            const options = document.querySelectorAll('.option-item');
+            options.forEach((option, index) => {
+                const removeBtn = option.querySelector('.remove-option-btn');
+                if (options.length <= 2) {
+                    removeBtn.style.display = 'none';
+                } else {
+                    removeBtn.style.display = 'block';
+                }
+            });
+        }
+
+        // File input handling
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up file inputs...');
+            
+            // Function to update file input display
+            function updateFileInputDisplay(input, file) {
+                const fileInputDiv = input.parentElement;
+                const icon = input.name === 'profile_image' ? '📷' : '🏷️';
+                const label = fileInputDiv.querySelector('label');
+                if (label) {
+                    label.textContent = `${icon} تم اختيار: ${file.name}`;
+                }
+                console.log(`Updated display for ${input.name}: ${file.name}`);
+            }
+            
+            // Setup file inputs
+            const profileInput = document.getElementById('profile_image_input');
+            const logoInput = document.getElementById('logo_input');
+            
+            if (profileInput) {
+                console.log('Setting up profile image input');
+                profileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        console.log('Profile image selected:', file.name, file.size, 'bytes');
+                        updateFileInputDisplay(this, file);
+                    }
+                });
+            } else {
+                console.log('Profile image input not found!');
+            }
+            
+            if (logoInput) {
+                console.log('Setting up logo input');
+                logoInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        console.log('Logo selected:', file.name, file.size, 'bytes');
+                        updateFileInputDisplay(this, file);
+                    }
+                });
+            } else {
+                console.log('Logo input not found!');
+            }
+
+            // Form submission handling
+            const profileForm = document.querySelector('form[method="post"]');
+            if (profileForm) {
+                profileForm.addEventListener('submit', function(e) {
+                    console.log('Form submitting...');
+                    const formData = new FormData(this);
+                    console.log('Form data keys:', Array.from(formData.keys()));
+                    
+                    // Check if files are in form data
+                    let hasFiles = false;
+                    for (let [key, value] of formData.entries()) {
+                        if (value instanceof File) {
+                            console.log(`File found: ${key} - ${value.name} (${value.size} bytes)`);
+                            hasFiles = true;
+                        } else {
+                            console.log(`Form field: ${key} = ${value}`);
+                        }
+                    }
+                    
+                    if (!hasFiles) {
+                        console.log('WARNING: No files found in form data!');
+                    }
+                    
+                    // Don't prevent default - let form submit normally
+                    console.log('Form is submitting with', hasFiles ? 'files' : 'no files');
+                });
+            }
+        });
+
+
+        // Initialize remove buttons
+        updateRemoveButtons();
+
+        // Export supporters to PDF
+        function exportSupportersPDF() {
+            // Show loading state
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ جاري التصدير...';
+            btn.disabled = true;
+
+            // Get supporters data
+            const supporters = [
+                {% for supporter in supporters %}
+                {
+                    name: `{% if supporter.bot_user.first_name or supporter.bot_user.last_name %}{{ supporter.bot_user.first_name }} {{ supporter.bot_user.last_name }}{% else %}{{ supporter.bot_user.username|default:"-" }}{% endif %}`,
+                    nationalId: `{% if supporter.notes and "National ID:" in supporter.notes %}{{ supporter.notes|slice:"-14:" }}{% else %}-{% endif %}`,
+                    phone: `{{ supporter.bot_user.phone_number|default:"-" }}`,
+                    city: `{{ supporter.city|default:"-" }}`,
+                    supportLevel: `{{ supporter.get_support_level_display }}`,
+                    date: `{{ supporter.registered_at|date:"Y-m-d" }}`
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            // Create PDF content
+            let pdfContent = `
+                <!DOCTYPE html>
+                <html dir="rtl" lang="ar">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>قائمة المؤيدين - {{ candidate.name }}</title>
+                    <style>
+                        body {
+                            font-family: 'Arial', sans-serif;
+                            direction: rtl;
+                            text-align: right;
+                            margin: 20px;
+                            color: #333;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            border-bottom: 2px solid #667eea;
+                            padding-bottom: 20px;
+                        }
+                        .header h1 {
+                            color: #667eea;
+                            margin: 0;
+                            font-size: 24px;
+                        }
+                        .header p {
+                            color: #666;
+                            margin: 5px 0;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 20px;
+                            font-size: 12px;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: right;
+                        }
+                        th {
+                            background-color: #667eea;
+                            color: white;
+                            font-weight: bold;
+                        }
+                        tr:nth-child(even) {
+                            background-color: #f9f9f9;
+                        }
+                        .footer {
+                            margin-top: 30px;
+                            text-align: center;
+                            color: #666;
+                            font-size: 10px;
+                        }
+                        .stats {
+                            background-color: #f0f0f0;
+                            padding: 15px;
+                            border-radius: 5px;
+                            margin-bottom: 20px;
+                        }
+                        .stats h3 {
+                            margin: 0 0 10px 0;
+                            color: #667eea;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>قائمة المؤيدين</h1>
+                        <p>المرشح: {{ candidate.name }}</p>
+                        <p>المنصب: {{ candidate.position }}</p>
+                        <p>تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</p>
+                    </div>
+
+                    <div class="stats">
+                        <h3>إحصائيات المؤيدين</h3>
+                        <p>إجمالي المؤيدين: ${supporters.length}</p>
+                        <p>مؤيدون: ${supporters.filter(s => s.supportLevel.includes('مؤيد')).length}</p>
+                        <p>متطوعون: ${supporters.filter(s => s.supportLevel.includes('متطوع')).length}</p>
+                        <p>داعمون ماليون: ${supporters.filter(s => s.supportLevel.includes('داعم مالي')).length}</p>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>م</th>
+                                <th>الاسم</th>
+                                <th>الرقم القومي</th>
+                                <th>الهاتف</th>
+                                <th>المدينة</th>
+                                <th>مستوى الدعم</th>
+                                <th>تاريخ الانضمام</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            supporters.forEach((supporter, index) => {
+                pdfContent += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${supporter.name}</td>
+                        <td>${supporter.nationalId}</td>
+                        <td>${supporter.phone}</td>
+                        <td>${supporter.city}</td>
+                        <td>${supporter.supportLevel}</td>
+                        <td>${supporter.date}</td>
+                    </tr>
+                `;
+            });
+
+            pdfContent += `
+                        </tbody>
+                    </table>
+
+                    <div class="footer">
+                        <p>تم إنشاء هذا التقرير بواسطة Election 360</p>
+                        <p>جميع الحقوق محفوظة © ${new Date().getFullYear()}</p>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Create and download PDF using browser's print functionality
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(pdfContent);
+            printWindow.document.close();
+            
+            // Wait for content to load then trigger print
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                
+                // Reset button state
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 500);
+        }
+    </script>
+</body>
+</html>

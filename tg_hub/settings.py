@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-3+u%9+0%nop+bsa(@dijc7_6u+f*=3epw%$kk)&uvt+4$b8u@1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '4b6d806f21bf.ngrok-free.app', 'd8675bdefe79.ngrok-free.app']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -37,10 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'django.contrib.gis',  # For geographic features - temporarily disabled
+    'rest_framework',  # For API endpoints
+    'corsheaders',  # For CORS support
     'hub',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -128,8 +132,48 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = [
     'https://4b6d806f21bf.ngrok-free.app',
-    'https://d8675bdefe79.ngrok-free.app'
+    'https://d8675bdefe79.ngrok-free.app',
+    'https://3ad99fb5c246.ngrok-free.app',  # Current ngrok tunnel
 ]
 
 # Auth
 LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/hub/election-dashboard/'
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://3ad99fb5c246.ngrok-free.app",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# Election 360 SaaS Configuration
+ELECTION_360 = {
+    'AI_SPEECH_API_KEY': '',  # Add your AI API key here
+    'FAKE_NEWS_MONITORING': True,
+    'HEATMAP_UPDATE_INTERVAL': 300,  # 5 minutes
+    'VOLUNTEER_POINTS': {
+        'canvassing': 10,
+        'posters': 5,
+        'social_media': 3,
+        'event_organization': 15,
+        'phone_calls': 8,
+        'data_entry': 2,
+        'other': 5,
+    }
+}

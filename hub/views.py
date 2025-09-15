@@ -2,11 +2,17 @@ import json
 import requests
 import logging
 from django.http import JsonResponse, HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.http import require_http_methods
-from .models import Bot, Campaign, CampaignAssignment, BotUser, SendLog, WebhookEvent, MessageLog
+from django.contrib import messages
+from .models import (
+    Bot, Campaign, CampaignAssignment, BotUser, SendLog, WebhookEvent, MessageLog,
+    Candidate, CandidateUser, Gallery, Event, EventAttendance, Speech, Poll, PollResponse, Supporter, 
+    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics
+)
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.core.files.storage import default_storage
@@ -1235,10 +1241,24 @@ def broadcast_action(request: HttpRequest) -> JsonResponse:
                         timeout=20,
                     )
             elif action == 'poll':
-                question = (data.get('question') or '').strip()
-                options = data.get('options') or []
-                if not question or not isinstance(options, list) or len(options) < 2:
-                    return JsonResponse({'error': 'poll requires question and at least 2 options'}, status=400)
+                # Accept both JSON and form submissions
+                question = (data.get('question') or request.POST.get('question') or '').strip()
+                raw_options = data.get('options') if 'options' in data else (request.POST.getlist('options') or request.POST.get('options'))
+                options: list[str] = []
+                if isinstance(raw_options, list):
+                    options = [str(o).strip() for o in raw_options if str(o).strip()]
+                elif isinstance(raw_options, str):
+                    # Split by newline or comma
+                    splitted = [s for chunk in raw_options.split('\n') for s in chunk.split(',')]
+                    options = [s.strip() for s in splitted if s.strip()]
+                # Telegram constraints: 2..10 options, each 1..100 chars
+                if not question:
+                    return JsonResponse({'error': 'poll requires non-empty question'}, status=400)
+                if len(options) < 2:
+                    return JsonResponse({'error': 'poll requires at least 2 options'}, status=400)
+                if len(options) > 10:
+                    options = options[:10]
+                options = [o[:100] for o in options]
                 payload = {
                     'chat_id': u.telegram_id,
                     'question': question,
@@ -1500,3 +1520,435 @@ def import_updates(request: HttpRequest) -> JsonResponse:
             started += 1
 
     return JsonResponse({'ok': True, 'upserted': upserted, 'started_marked': started})
+
+
+# ===== ELECTION 360 DASHBOARD =====
+
+@login_required()
+def election_dashboard(request: HttpRequest) -> HttpResponse:
+    """Election 360 SaaS Dashboard"""
+    candidates = Candidate.objects.filter(is_active=True).order_by('-created_at')
+    context = {
+        'candidates': candidates,
+    }
+    return render(request, 'hub/election_dashboard.html', context)
+
+
+def public_landing(request: HttpRequest) -> HttpResponse:
+    """Public landing page for Election 360 - accessible to all users"""
+    # Get some basic stats for the landing page
+    total_candidates = Candidate.objects.filter(is_active=True).count()
+    total_events = Event.objects.filter(is_public=True).count()
+    total_supporters = Supporter.objects.count()
+    
+    # Get all active candidates for the candidates section
+    candidates = Candidate.objects.filter(is_active=True).order_by('-created_at')
+    
+    context = {
+        'total_candidates': total_candidates,
+        'total_events': total_events,
+        'total_supporters': total_supporters,
+        'candidates': candidates,
+    }
+    return render(request, 'hub/public_landing.html', context)
+
+
+@csrf_exempt
+def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
+    """Individual candidate landing page"""
+    try:
+        candidate = Candidate.objects.get(id=candidate_id, is_active=True)
+    except Candidate.DoesNotExist:
+        return HttpResponse("Candidate not found", status=404)
+    
+    # Debug CSRF token for development
+    if request.method == 'POST':
+        print(f"CSRF token from request: {request.POST.get('csrfmiddlewaretoken', 'NOT_FOUND')}")
+        print(f"CSRF token from headers: {request.META.get('HTTP_X_CSRFTOKEN', 'NOT_FOUND')}")
+    
+    # Handle support button click
+    if request.method == 'POST' and request.POST.get('action') == 'support':
+        # Get user data from request
+        user_name = request.POST.get('user_name', '').strip()
+        user_phone = request.POST.get('user_phone', '').strip()
+        user_national_id = request.POST.get('user_national_id', '').strip()
+        user_email = request.POST.get('user_email', '').strip()
+        user_city = request.POST.get('user_city', '').strip()
+        support_level_str = request.POST.get('support_level', 'supporter')
+        # Convert support level string to integer
+        support_level_map = {
+            'supporter': 1,
+            'volunteer': 2,
+            'donor': 3
+        }
+        support_level = support_level_map.get(support_level_str, 1)
+        
+        # Create a temporary BotUser for supporters (or find existing one)
+        # For now, we'll create a simple supporter record
+        if user_name and user_phone and user_national_id:
+            # Validate national id: exactly 14 digits
+            nat = (user_national_id or '').strip()
+            if not (nat.isdigit() and len(nat) == 14):
+                return JsonResponse({'success': False, 'message': 'الرقم القومي غير صالح. يجب أن يكون 14 رقمًا.'})
+            # Validate phone: exactly 11 digits
+            ph = (user_phone or '').strip()
+            if not (ph.isdigit() and len(ph) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+            # Check if supporter already exists (by phone)
+            existing_supporter = Supporter.objects.filter(
+                candidate=candidate,
+                bot_user__phone_number=ph
+            ).first()
+            # Also check by national id via notes string since we don't have a dedicated column
+            existing_by_national = Supporter.objects.filter(
+                candidate=candidate,
+                notes__icontains=user_national_id
+            ).first()
+            
+            if not existing_supporter and not existing_by_national:
+                # Create a temporary BotUser for this supporter
+                temp_bot = Bot.objects.first()  # Use first available bot
+                if temp_bot:
+                    bot_user, created = BotUser.objects.get_or_create(
+                        bot=temp_bot,
+                        phone_number=ph,
+                        defaults={
+                            'first_name': user_name.split()[0] if user_name.split() else user_name,
+                            'last_name': ' '.join(user_name.split()[1:]) if len(user_name.split()) > 1 else '',
+                            'telegram_id': hash(user_national_id) % 1000000000,  # Generate unique ID from national ID
+                        }
+                    )
+                    
+                    # Create supporter record
+                    Supporter.objects.create(
+                        candidate=candidate,
+                        bot_user=bot_user,
+                        city=user_city,
+                        support_level=support_level,
+                        notes=f"Supporter from landing page - Email: {user_email}, National ID: {user_national_id}"
+                    )
+                    
+                    # Return success response for AJAX
+                    return JsonResponse({'success': True, 'message': 'تم تسجيل دعمك بنجاح!'})
+                else:
+                    return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
+            else:
+                if existing_supporter:
+                    return JsonResponse({'success': False, 'message': 'هذا الرقم مسجل كمؤيد بالفعل لهذا المرشح.'})
+                return JsonResponse({'success': False, 'message': 'الرقم القومي مسجل مسبقًا لهذا المرشح.'})
+        else:
+            return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
+    
+    # Handle poll voting
+    if request.method == 'POST' and request.POST.get('action') == 'vote':
+        poll_id = request.POST.get('poll_id')
+        option_index = request.POST.get('option_index')
+        voter_name = request.POST.get('voter_name', '').strip()
+        voter_phone = request.POST.get('voter_phone', '').strip()
+        
+        if poll_id and option_index and voter_name and voter_phone:
+            # Validate phone: exactly 11 digits
+            phone_clean = (voter_phone or '').strip()
+            if not (phone_clean.isdigit() and len(phone_clean) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+            try:
+                poll = Poll.objects.get(id=poll_id, candidate=candidate)
+                
+                # Create a temporary BotUser for the voter
+                temp_bot = Bot.objects.first()
+                if temp_bot:
+                    # Use phone number as unique identifier instead of telegram_id
+                    bot_user, created = BotUser.objects.get_or_create(
+                        bot=temp_bot,
+                        phone_number=voter_phone,
+                        defaults={
+                            'first_name': voter_name.split()[0] if voter_name.split() else voter_name,
+                            'last_name': ' '.join(voter_name.split()[1:]) if len(voter_name.split()) > 1 else '',
+                            'telegram_id': hash(voter_phone + voter_name) % 1000000000,  # Generate unique ID from phone + name
+                        }
+                    )
+                    
+                    # Check if user already voted
+                    existing_response = PollResponse.objects.filter(
+                        poll=poll,
+                        bot_user=bot_user
+                    ).first()
+                    
+                    if not existing_response:
+                        # Create poll response
+                        PollResponse.objects.create(
+                            poll=poll,
+                            bot_user=bot_user,
+                            selected_options=[int(option_index)]
+                        )
+                        return JsonResponse({'success': True, 'message': 'تم تسجيل تصويتك بنجاح!'})
+                    else:
+                        return JsonResponse({'success': False, 'message': 'لقد قمت بالتصويت من قبل باستخدام هذا الرقم.'})
+                else:
+                    return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
+            except (Poll.DoesNotExist, ValueError):
+                return JsonResponse({'success': False, 'message': 'خطأ: استطلاع غير صحيح'})
+        else:
+            return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
+    
+    # Get candidate's events
+    events = Event.objects.filter(candidate=candidate, is_public=True).order_by('-start_datetime')[:5]
+    
+    # Get candidate's supporters count
+    supporters_count = Supporter.objects.filter(candidate=candidate).count()
+    
+    # Get recent speeches
+    speeches = Speech.objects.filter(candidate=candidate).order_by('-created_at')[:3]
+    
+    # Get recent polls with vote counts
+    polls = Poll.objects.filter(candidate=candidate).order_by('-created_at')[:5]
+    for poll in polls:
+        # Calculate vote counts for each option
+        all_responses = PollResponse.objects.filter(poll=poll)
+        option_votes_list = []
+        options_with_counts = []
+        for i, option in enumerate(poll.options):
+            vote_count = 0
+            for response in all_responses:
+                if i in response.selected_options:
+                    vote_count += 1
+            option_votes_list.append(vote_count)
+            options_with_counts.append({
+                'index': i,
+                'text': option,
+                'count': vote_count,
+            })
+        # Attach convenient attributes for templates
+        poll.option_votes_list = option_votes_list
+        poll.options_with_counts = options_with_counts
+    
+    # Get candidate's bot (if any)
+    candidate_bot = candidate.bot
+    
+    # Get gallery items
+    gallery_items = Gallery.objects.filter(candidate=candidate, is_public=True).order_by('-is_featured', '-created_at')[:12]
+    
+    context = {
+        'candidate': candidate,
+        'events': events,
+        'supporters_count': supporters_count,
+        'speeches': speeches,
+        'polls': polls,
+        'candidate_bot': candidate_bot,
+        'gallery_items': gallery_items,
+    }
+    return render(request, 'hub/candidate_landing.html', context)
+
+
+@login_required()
+def user_profile(request: HttpRequest) -> HttpResponse:
+    """User profile page - redirects to election dashboard"""
+    return redirect('/hub/election-dashboard/')
+
+
+def candidate_login(request: HttpRequest, candidate_id: str) -> HttpResponse:
+    """Login page for candidate dashboard"""
+    try:
+        candidate = Candidate.objects.get(id=candidate_id, is_active=True)
+    except Candidate.DoesNotExist:
+        return HttpResponse("Candidate not found", status=404)
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        if user and hasattr(user, 'candidate_profile') and user.candidate_profile.candidate.id == candidate.id:
+            login(request, user)
+            return redirect('candidate_dashboard', candidate_id=candidate_id)
+        else:
+            messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
+    
+    context = {
+        'candidate': candidate,
+    }
+    return render(request, 'hub/candidate_login.html', context)
+
+
+@login_required()
+def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse:
+    """Individual candidate dashboard for managing their profile and campaign data"""
+    try:
+        candidate = Candidate.objects.get(id=candidate_id, is_active=True)
+    except Candidate.DoesNotExist:
+        return HttpResponse("Candidate not found", status=404)
+    
+    # Check if user has permission to edit this candidate
+    if not request.user.is_authenticated or not hasattr(request.user, 'candidate_profile') or request.user.candidate_profile.candidate.id != candidate.id:
+        return redirect('candidate_login', candidate_id=candidate_id)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action', 'profile')
+        
+        if action == 'profile':
+            # Handle profile form submission
+            candidate.name = request.POST.get('name', candidate.name)
+            candidate.position = request.POST.get('position', candidate.position)
+            candidate.party = request.POST.get('party', candidate.party)
+            candidate.bio = request.POST.get('bio', candidate.bio)
+            candidate.program = request.POST.get('program', candidate.program)
+            candidate.website = request.POST.get('website', candidate.website)
+            candidate.email = request.POST.get('email', candidate.email)
+            candidate.phone = request.POST.get('phone', candidate.phone)
+            
+            # Handle social media
+            social_media = {}
+            if request.POST.get('facebook'):
+                social_media['facebook'] = request.POST.get('facebook')
+            if request.POST.get('twitter'):
+                social_media['twitter'] = request.POST.get('twitter')
+            if request.POST.get('instagram'):
+                social_media['instagram'] = request.POST.get('instagram')
+            if request.POST.get('linkedin'):
+                social_media['linkedin'] = request.POST.get('linkedin')
+            candidate.social_media = social_media
+            
+            candidate.save()
+            
+            # Handle file uploads
+            print(f"DEBUG: Files in request: {list(request.FILES.keys())}")
+            print(f"DEBUG: POST data: {list(request.POST.keys())}")
+            
+            if 'profile_image' in request.FILES:
+                print(f"DEBUG: Profile image file found: {request.FILES['profile_image']}")
+                candidate.profile_image = request.FILES['profile_image']
+                candidate.save()
+                print(f"Profile image uploaded: {candidate.profile_image}")
+                messages.success(request, f'تم رفع الصورة الشخصية: {candidate.profile_image.name}')
+            else:
+                print("DEBUG: No profile_image in request.FILES")
+            
+            if 'logo' in request.FILES:
+                print(f"DEBUG: Logo file found: {request.FILES['logo']}")
+                candidate.logo = request.FILES['logo']
+                candidate.save()
+                print(f"Logo uploaded: {candidate.logo}")
+                messages.success(request, f'تم رفع الشعار: {candidate.logo.name}')
+            else:
+                print("DEBUG: No logo in request.FILES")
+            
+            # Add success message
+            messages.success(request, 'تم حفظ التغييرات بنجاح!')
+            
+            # Redirect to refresh the page and show updated images
+            return redirect('candidate_dashboard', candidate_id=candidate_id)
+        
+        elif action == 'add_event':
+            # Handle new event creation
+            event = Event.objects.create(
+                candidate=candidate,
+                title=request.POST.get('event_title', ''),
+                description=request.POST.get('event_description', ''),
+                event_type=request.POST.get('event_type', 'meeting'),
+                location=request.POST.get('event_location', ''),
+                start_datetime=request.POST.get('event_start_datetime'),
+                end_datetime=request.POST.get('event_end_datetime') or None,
+                is_public=request.POST.get('event_is_public') == 'on',
+                max_attendees=request.POST.get('event_max_attendees') or None,
+            )
+            if 'event_image' in request.FILES:
+                event.image = request.FILES['event_image']
+                event.save()
+        
+        elif action == 'add_speech':
+            # Handle new speech creation
+            speech = Speech.objects.create(
+                candidate=candidate,
+                title=request.POST.get('speech_title', ''),
+                content=request.POST.get('speech_content', ''),
+                summary=request.POST.get('speech_summary', ''),
+                speech_type=request.POST.get('speech_type', 'campaign'),
+                ai_generated=request.POST.get('speech_ai_generated') == 'on',
+            )
+        
+        elif action == 'add_poll':
+            # Handle new poll creation
+            poll = Poll.objects.create(
+                candidate=candidate,
+                question=request.POST.get('poll_question', ''),
+                options=request.POST.getlist('poll_options'),
+                is_anonymous=request.POST.get('poll_is_anonymous') == 'on',
+                allows_multiple_answers=request.POST.get('poll_allows_multiple') == 'on',
+                expires_at=request.POST.get('poll_expires_at') or None,
+            )
+        
+        elif action == 'delete_event':
+            # Handle event deletion
+            event_id = request.POST.get('event_id')
+            try:
+                event = Event.objects.get(id=event_id, candidate=candidate)
+                event.delete()
+            except Event.DoesNotExist:
+                pass
+        
+        elif action == 'delete_speech':
+            # Handle speech deletion
+            speech_id = request.POST.get('speech_id')
+            try:
+                speech = Speech.objects.get(id=speech_id, candidate=candidate)
+                speech.delete()
+            except Speech.DoesNotExist:
+                pass
+        
+        elif action == 'delete_poll':
+            # Handle poll deletion
+            poll_id = request.POST.get('poll_id')
+            try:
+                poll = Poll.objects.get(id=poll_id, candidate=candidate)
+                poll.delete()
+            except Poll.DoesNotExist:
+                pass
+        
+        elif action == 'add_gallery':
+            # Handle gallery item creation
+            title = request.POST.get('gallery_title', '').strip()
+            description = request.POST.get('gallery_description', '').strip()
+            media_type = request.POST.get('gallery_media_type', 'image')
+            is_featured = request.POST.get('gallery_is_featured') == 'on'
+            is_public = request.POST.get('gallery_is_public') == 'on'
+            
+            if title and 'gallery_file' in request.FILES:
+                gallery_item = Gallery.objects.create(
+                    candidate=candidate,
+                    title=title,
+                    description=description,
+                    media_type=media_type,
+                    file=request.FILES['gallery_file'],
+                    is_featured=is_featured,
+                    is_public=is_public
+                )
+                messages.success(request, f'تم إضافة {gallery_item.title} إلى المعرض بنجاح!')
+        
+        elif action == 'delete_gallery':
+            # Handle gallery item deletion
+            gallery_id = request.POST.get('gallery_id')
+            try:
+                gallery_item = Gallery.objects.get(id=gallery_id, candidate=candidate)
+                gallery_item.delete()
+                messages.success(request, 'تم حذف العنصر من المعرض بنجاح!')
+            except Gallery.DoesNotExist:
+                pass
+    
+    # Get all candidate data for the dashboard
+    events = Event.objects.filter(candidate=candidate).order_by('-start_datetime')
+    speeches = Speech.objects.filter(candidate=candidate).order_by('-created_at')
+    polls = Poll.objects.filter(candidate=candidate).order_by('-created_at')
+    supporters = Supporter.objects.filter(candidate=candidate).order_by('-registered_at')
+    supporters_count = supporters.count()
+    gallery_items = Gallery.objects.filter(candidate=candidate).order_by('-is_featured', '-created_at')
+    
+    context = {
+        'candidate': candidate,
+        'events': events,
+        'speeches': speeches,
+        'polls': polls,
+        'supporters': supporters,
+        'supporters_count': supporters_count,
+        'gallery_items': gallery_items,
+    }
+    return render(request, 'hub/candidate_dashboard.html', context)

@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from .views import (
     validate_token,
     broadcast,
@@ -24,6 +24,12 @@ from .views import (
     test_webhook,     # Add this
     import_updates,
     broadcast_action,
+    election_dashboard,
+    public_landing,
+    candidate_landing,
+    candidate_login,
+    candidate_dashboard,
+    user_profile,
 )
 
 urlpatterns = [
@@ -52,6 +58,21 @@ urlpatterns = [
     path('bots/<int:bot_id>/debug/', debug_bot_users),
     # Debug endpoints
     path('bots/<int:bot_id>/test/', test_webhook),
-
-
+    
+    # Election 360 SaaS
+    path('election-dashboard/', election_dashboard, name='election_dashboard'),
+    path('election/', include('hub.election_urls')),
+    
+    # Public landing page
+    path('public/', public_landing, name='public_landing'),
+    
+    # Candidate landing pages
+    path('candidate/<str:candidate_id>/', candidate_landing, name='candidate_landing'),
+    
+    # Candidate login and dashboards
+    path('candidate/<str:candidate_id>/login/', candidate_login, name='candidate_login'),
+    path('candidate/<str:candidate_id>/dashboard/', candidate_dashboard, name='candidate_dashboard'),
+    
+    # User profile (redirects to election dashboard)
+    path('profile/', user_profile, name='user_profile'),
 ]

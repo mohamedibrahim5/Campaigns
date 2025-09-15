@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
+import uuid
 
 
 class Bot(models.Model):
@@ -10,6 +12,7 @@ class Bot(models.Model):
     admin_chat_id = models.BigIntegerField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
+    bot_link = models.URLField(blank=True, null=True, help_text="Direct link to the Telegram bot (e.g., https://t.me/your_bot)")
 
     def __str__(self) -> str:
         return f"{self.name}"
@@ -154,4 +157,355 @@ class MessageLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.bot.name} chat={self.chat_id} msg={self.message_id or '-'}"
+
+
+# ===== ELECTION 360 SAAS MODELS =====
+
+class Candidate(models.Model):
+    """Candidate profile with CV, program, and media"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    position = models.CharField(max_length=200)  # e.g., "Mayor of Cairo", "President"
+    party = models.CharField(max_length=200, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)  # CV content
+    program = models.TextField(blank=True, null=True)  # Election program
+    profile_image = models.ImageField(upload_to='candidates/', blank=True, null=True)
+    logo = models.ImageField(upload_to='candidates/logos/', blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    social_media = models.JSONField(default=dict, blank=True)  # {facebook: url, twitter: url, etc}
+    bot = models.ForeignKey(Bot, on_delete=models.SET_NULL, null=True, blank=True, related_name='candidates')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.position}"
+
+
+class CandidateUser(models.Model):
+    """User account for candidates to access their dashboard"""
+    user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='candidate_profile')
+    candidate = models.OneToOneField(Candidate, on_delete=models.CASCADE, related_name='dashboard_user')
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Candidate User'
+        verbose_name_plural = 'Candidate Users'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.candidate.name}"
+    
+    @property
+    def username(self):
+        return self.user.username
+    
+    @property
+    def email(self):
+        return self.user.email
+    
+    @property
+    def is_active(self):
+        return self.user.is_active
+
+
+class Gallery(models.Model):
+    """Gallery for candidate images and videos"""
+    MEDIA_TYPES = [
+        ('image', 'Image'),
+        ('video', 'Video'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='gallery_items')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    media_type = models.CharField(max_length=10, choices=MEDIA_TYPES)
+    file = models.FileField(upload_to='candidates/gallery/')
+    thumbnail = models.ImageField(upload_to='candidates/gallery/thumbnails/', blank=True, null=True)
+    is_featured = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_featured', '-created_at']
+        verbose_name_plural = 'Gallery Items'
+
+    def __str__(self):
+        return f"{self.candidate.name} - {self.title} ({self.media_type})"
+
+    @property
+    def file_url(self):
+        if self.file:
+            return self.file.url
+        return None
+
+    @property
+    def thumbnail_url(self):
+        if self.thumbnail:
+            return self.thumbnail.url
+        return None
+
+
+class Event(models.Model):
+    """Events and announcements for candidates"""
+    EVENT_TYPES = [
+        ('conference', 'Conference'),
+        ('meeting', 'Meeting'),
+        ('rally', 'Rally'),
+        ('debate', 'Debate'),
+        ('announcement', 'Announcement'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='events')
+    title = models.CharField(max_length=300)
+    description = models.TextField()
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES, default='meeting')
+    location = models.CharField(max_length=300)
+    latitude = models.DecimalField(max_digits=10, decimal_places=8, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=11, decimal_places=8, blank=True, null=True)
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField(blank=True, null=True)
+    is_public = models.BooleanField(default=True)
+    max_attendees = models.PositiveIntegerField(blank=True, null=True)
+    image = models.ImageField(upload_to='events/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_datetime']
+
+    def __str__(self):
+        return f"{self.title} - {self.candidate.name}"
+
+
+class EventAttendance(models.Model):
+    """Track who attended events"""
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='attendances')
+    bot_user = models.ForeignKey(BotUser, on_delete=models.CASCADE, related_name='event_attendances')
+    attended_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ['event', 'bot_user']
+
+    def __str__(self):
+        return f"{self.bot_user} attended {self.event.title}"
+
+
+class Speech(models.Model):
+    """AI-generated speeches and summaries"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='speeches')
+    title = models.CharField(max_length=300)
+    ideas = models.TextField()  # Input ideas from candidate
+    full_speech = models.TextField()  # AI-generated full speech
+    summary = models.TextField()  # Auto-generated summary for social media
+    facebook_post = models.TextField(blank=True, null=True)  # Formatted for Facebook
+    twitter_post = models.TextField(blank=True, null=True)  # Formatted for Twitter
+    event = models.ForeignKey(Event, on_delete=models.SET_NULL, null=True, blank=True, related_name='speeches')
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.candidate.name}"
+
+
+class Poll(models.Model):
+    """Polls and surveys for voters"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='polls')
+    title = models.CharField(max_length=300)
+    question = models.TextField()
+    options = models.JSONField()  # List of poll options
+    is_anonymous = models.BooleanField(default=True)
+    allows_multiple_answers = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    expires_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.candidate.name}"
+
+
+class PollResponse(models.Model):
+    """Individual poll responses"""
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name='responses')
+    bot_user = models.ForeignKey(BotUser, on_delete=models.CASCADE, related_name='poll_responses')
+    selected_options = models.JSONField()  # List of selected option indices
+    responded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['poll', 'bot_user']
+
+    def __str__(self):
+        return f"{self.bot_user} responded to {self.poll.title}"
+
+
+class Supporter(models.Model):
+    """Voter supporters with location data"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='supporters')
+    bot_user = models.ForeignKey(BotUser, on_delete=models.CASCADE, related_name='support_records')
+    city = models.CharField(max_length=100, blank=True, null=True)
+    district = models.CharField(max_length=100, blank=True, null=True)
+    latitude = models.DecimalField(max_digits=10, decimal_places=8, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=11, decimal_places=8, blank=True, null=True)
+    support_level = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        default=5
+    )  # 1-5 scale
+    notes = models.TextField(blank=True, null=True)
+    registered_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['candidate', 'bot_user']
+        ordering = ['-registered_at']
+
+    def get_support_level_display(self):
+        """Get Arabic display name for support level"""
+        support_level_map = {
+            1: 'مؤيد',
+            2: 'متطوع', 
+            3: 'دعم مالي',
+            4: 'داعم نشط',
+            5: 'داعم متميز'
+        }
+        return support_level_map.get(self.support_level, f'مستوى {self.support_level}')
+
+    def __str__(self):
+        return f"{self.bot_user} supports {self.candidate.name}"
+
+
+class Volunteer(models.Model):
+    """Volunteer management with gamification"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='volunteers')
+    bot_user = models.ForeignKey(BotUser, on_delete=models.CASCADE, related_name='volunteer_records')
+    name = models.CharField(max_length=200)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    role = models.CharField(max_length=100, default='volunteer')
+    is_active = models.BooleanField(default=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['candidate', 'bot_user']
+        ordering = ['-joined_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.candidate.name}"
+
+
+class VolunteerActivity(models.Model):
+    """Track volunteer activities for gamification"""
+    ACTIVITY_TYPES = [
+        ('canvassing', 'Canvassing'),
+        ('posters', 'Poster Distribution'),
+        ('social_media', 'Social Media Sharing'),
+        ('event_organization', 'Event Organization'),
+        ('phone_calls', 'Phone Calls'),
+        ('data_entry', 'Data Entry'),
+        ('other', 'Other'),
+    ]
+
+    volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, related_name='activities')
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
+    description = models.TextField()
+    supporters_contacted = models.PositiveIntegerField(default=0)
+    posters_distributed = models.PositiveIntegerField(default=0)
+    hours_worked = models.DecimalField(max_digits=4, decimal_places=2, default=0)
+    points_earned = models.PositiveIntegerField(default=0)
+    location = models.CharField(max_length=200, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.volunteer.name} - {self.get_activity_type_display()}"
+
+
+class FakeNewsAlert(models.Model):
+    """Fake news monitoring and alerts"""
+    SEVERITY_LEVELS = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='fake_news_alerts')
+    title = models.CharField(max_length=300)
+    content = models.TextField()
+    source_url = models.URLField()
+    source_platform = models.CharField(max_length=100)  # facebook, twitter, news_site, etc
+    severity = models.CharField(max_length=10, choices=SEVERITY_LEVELS, default='medium')
+    is_verified = models.BooleanField(default=False)
+    is_resolved = models.BooleanField(default=False)
+    response_action = models.TextField(blank=True, null=True)
+    detected_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-detected_at']
+
+    def __str__(self):
+        return f"Alert: {self.title} - {self.candidate.name}"
+
+
+class DailyQuestion(models.Model):
+    """Daily Q&A questions from bot users"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='daily_questions')
+    bot_user = models.ForeignKey(BotUser, on_delete=models.CASCADE, related_name='questions_asked')
+    question = models.TextField()
+    answer = models.TextField(blank=True, null=True)
+    is_answered = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=True)
+    asked_at = models.DateTimeField(auto_now_add=True)
+    answered_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-asked_at']
+
+    def __str__(self):
+        return f"Q: {self.question[:50]}... - {self.candidate.name}"
+
+
+class CampaignAnalytics(models.Model):
+    """Analytics and metrics for campaigns"""
+    candidate = models.OneToOneField(Candidate, on_delete=models.CASCADE, related_name='analytics')
+    total_supporters = models.PositiveIntegerField(default=0)
+    total_volunteers = models.PositiveIntegerField(default=0)
+    total_events = models.PositiveIntegerField(default=0)
+    total_polls = models.PositiveIntegerField(default=0)
+    total_speeches = models.PositiveIntegerField(default=0)
+    total_fake_news_alerts = models.PositiveIntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Analytics for {self.candidate.name}"
 
