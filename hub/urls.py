@@ -29,6 +29,8 @@ from .views import (
     candidate_landing,
     candidate_login,
     candidate_dashboard,
+    candidate_support,
+    candidate_ask,
     user_profile,
 )
 
@@ -68,6 +70,8 @@ urlpatterns = [
     
     # Candidate landing pages
     path('candidate/<str:candidate_id>/', candidate_landing, name='candidate_landing'),
+    path('candidate/<str:candidate_id>/support/', candidate_support, name='candidate_support'),
+    path('candidate/<str:candidate_id>/ask/', candidate_ask, name='candidate_ask'),
     
     # Candidate login and dashboards
     path('candidate/<str:candidate_id>/login/', candidate_login, name='candidate_login'),

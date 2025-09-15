@@ -1740,6 +1740,111 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
     return render(request, 'hub/candidate_landing.html', context)
 
 
+@csrf_exempt
+def candidate_support(request: HttpRequest, candidate_id: str) -> HttpResponse:
+    """Standalone support page to avoid modal issues."""
+    try:
+        candidate = Candidate.objects.get(id=candidate_id, is_active=True)
+    except Candidate.DoesNotExist:
+        return HttpResponse("Candidate not found", status=404)
+
+    if request.method == 'POST' and request.POST.get('action') == 'support':
+        # Minimal server-side validation and creation (mirrors landing logic)
+        user_name = request.POST.get('user_name', '').strip()
+        user_phone = request.POST.get('user_phone', '').strip()
+        user_national_id = request.POST.get('user_national_id', '').strip()
+        user_email = request.POST.get('user_email', '').strip()
+        user_city = request.POST.get('user_city', '').strip()
+        if not (user_name and user_phone and user_national_id):
+            messages.error(request, 'يرجى ملء جميع الحقول المطلوبة')
+        elif not (user_phone.isdigit() and len(user_phone) == 11):
+            messages.error(request, 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.')
+        elif not (user_national_id.isdigit() and len(user_national_id) == 14):
+            messages.error(request, 'الرقم القومي غير صالح. يجب أن يكون 14 رقمًا.')
+        else:
+            existing_supporter = Supporter.objects.filter(
+                candidate=candidate,
+                bot_user__phone_number=user_phone
+            ).first()
+            existing_by_national = Supporter.objects.filter(
+                candidate=candidate,
+                notes__icontains=user_national_id
+            ).first()
+            if existing_supporter or existing_by_national:
+                messages.error(request, 'هذا الدعم مسجل بالفعل لهذا المرشح.')
+            else:
+                temp_bot = Bot.objects.first()
+                if not temp_bot:
+                    messages.error(request, 'خطأ: لم يتم العثور على بوت للربط')
+                else:
+                    bot_user, _ = BotUser.objects.get_or_create(
+                        bot=temp_bot,
+                        phone_number=user_phone,
+                        defaults={
+                            'first_name': user_name.split()[0] if user_name.split() else user_name,
+                            'last_name': ' '.join(user_name.split()[1:]) if len(user_name.split()) > 1 else '',
+                            'telegram_id': hash(user_national_id) % 1000000000,
+                        }
+                    )
+                    Supporter.objects.create(
+                        candidate=candidate,
+                        bot_user=bot_user,
+                        city=user_city,
+                        support_level=1,
+                        notes=f"Supporter from support page - Email: {user_email}, National ID: {user_national_id}"
+                    )
+                    messages.success(request, 'تم تسجيل دعمك بنجاح!')
+
+    return render(request, 'hub/support.html', {'candidate': candidate})
+
+
+@csrf_exempt
+def candidate_ask(request: HttpRequest, candidate_id: str) -> HttpResponse:
+    """Standalone Ask-the-Candidate page."""
+    try:
+        candidate = Candidate.objects.get(id=candidate_id, is_active=True)
+    except Candidate.DoesNotExist:
+        return HttpResponse("Candidate not found", status=404)
+
+    if request.method == 'POST' and request.POST.get('action') == 'ask':
+        asker_name = request.POST.get('asker_name', '').strip()
+        asker_phone = request.POST.get('asker_phone', '').strip()
+        asker_national_id = request.POST.get('asker_national_id', '').strip()
+        question_text = request.POST.get('question_text', '').strip()
+
+        if not (asker_name and asker_phone and asker_national_id and question_text):
+            messages.error(request, 'يرجى ملء جميع الحقول المطلوبة')
+        elif not (asker_phone.isdigit() and len(asker_phone) == 11):
+            messages.error(request, 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.')
+        elif not (asker_national_id.isdigit() and len(asker_national_id) == 14):
+            messages.error(request, 'الرقم القومي غير صالح. يجب أن يكون 14 رقمًا.')
+        else:
+            temp_bot = Bot.objects.first()
+            if not temp_bot:
+                messages.error(request, 'خطأ: لم يتم العثور على بوت للربط')
+            else:
+                bot_user, _ = BotUser.objects.get_or_create(
+                    bot=temp_bot,
+                    phone_number=asker_phone,
+                    defaults={
+                        'first_name': asker_name.split()[0] if asker_name.split() else asker_name,
+                        'last_name': ' '.join(asker_name.split()[1:]) if len(asker_name.split()) > 1 else '',
+                        'telegram_id': hash(asker_phone + asker_name) % 1000000000,
+                    }
+                )
+                meta_suffix = f"\n— الهاتف: {asker_phone} — الرقم القومي: {asker_national_id}"
+                DailyQuestion.objects.create(
+                    candidate=candidate,
+                    bot_user=bot_user,
+                    question=f"{question_text}{meta_suffix}",
+                    is_public=False,
+                )
+                messages.success(request, 'تم إرسال سؤالك بنجاح!')
+                return redirect(f"/hub/candidate/{candidate.id}/ask/")
+
+    return render(request, 'hub/ask.html', {'candidate': candidate})
+
+
 @login_required()
 def user_profile(request: HttpRequest) -> HttpResponse:
     """User profile page - redirects to election dashboard"""
@@ -1933,6 +2038,20 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
                 messages.success(request, 'تم حذف العنصر من المعرض بنجاح!')
             except Gallery.DoesNotExist:
                 pass
+        
+        elif action == 'answer_question':
+            # Save answer to a question from the Questions modal
+            q_id = request.POST.get('question_id')
+            answer = (request.POST.get('answer') or '').strip()
+            if q_id and answer:
+                try:
+                    q = DailyQuestion.objects.get(id=q_id, candidate=candidate)
+                    q.answer = answer
+                    q.is_answered = True
+                    q.save()
+                    messages.success(request, 'تم حفظ الإجابة بنجاح!')
+                except DailyQuestion.DoesNotExist:
+                    messages.error(request, 'لم يتم العثور على السؤال')
     
     # Get all candidate data for the dashboard
     events = Event.objects.filter(candidate=candidate).order_by('-start_datetime')
@@ -1941,6 +2060,7 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
     supporters = Supporter.objects.filter(candidate=candidate).order_by('-registered_at')
     supporters_count = supporters.count()
     gallery_items = Gallery.objects.filter(candidate=candidate).order_by('-is_featured', '-created_at')
+    questions = DailyQuestion.objects.filter(candidate=candidate).order_by('-asked_at')
     
     context = {
         'candidate': candidate,
@@ -1950,5 +2070,6 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
         'supporters': supporters,
         'supporters_count': supporters_count,
         'gallery_items': gallery_items,
+        'questions': questions,
     }
     return render(request, 'hub/candidate_dashboard.html', context)

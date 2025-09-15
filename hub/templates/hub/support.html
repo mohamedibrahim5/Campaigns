@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ادعم {{ candidate.name }}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f6f7fb; margin:0; }
+        .container { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+        .card { background:#fff; border:1px solid #eee; border-radius:14px; padding:22px; box-shadow:0 10px 25px rgba(0,0,0,.06); }
+        h1 { font-size:1.35rem; margin:0 0 6px; color:#2d3748; }
+        p.lead { margin:0 0 16px; color:#666; font-size:.95rem; }
+        .alert { padding:12px 14px; border-radius:10px; margin-bottom:10px; font-size:.95rem; }
+        .alert-success { background:#e6f4ea; color:#1e7e34; border:1px solid #c7ebd1; }
+        .alert-error { background:#fdecea; color:#b00020; border:1px solid #f5c6cb; }
+        .form-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+        .form-group { display:flex; flex-direction:column; }
+        label { font-size:.9rem; color:#444; margin-bottom:6px; }
+        input[type="text"], input[type="tel"], input[type="email"] { height:44px; padding:10px 12px; border:1px solid #ddd; border-radius:10px; font-size:.95rem; }
+        .actions { margin-top:16px; display:flex; gap:10px; }
+        .btn { background: linear-gradient(45deg, #667eea, #764ba2); color:#fff; border:none; padding:12px 18px; border-radius:12px; cursor:pointer; font-size:.95rem; }
+        .btn-secondary { background:#e2e8f0; color:#333; }
+        .header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+        .avatar { width:44px; height:44px; border-radius:50%; object-fit:cover; border:2px solid #667eea; }
+        @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                {% if candidate.profile_image %}
+                    <img src="{{ candidate.profile_image.url }}" alt="{{ candidate.name }}" class="avatar">
+                {% endif %}
+                <div>
+                    <h1>💪 ادعم {{ candidate.name }}</h1>
+                    <p class="lead">أدخل بياناتك لتسجيل دعمك فوراً</p>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'success' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="support">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="user_name">الاسم الكامل *</label>
+                        <input type="text" id="user_name" name="user_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user_phone">رقم الهاتف (11 رقم) *</label>
+                        <input type="tel" id="user_phone" name="user_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="01012345678">
+                    </div>
+                    <div class="form-group">
+                        <label for="user_national_id">الرقم القومي (14 رقم) *</label>
+                        <input type="text" id="user_national_id" name="user_national_id" required minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" placeholder="14 رقمًا">
+                    </div>
+                    <div class="form-group">
+                        <label for="user_email">البريد الإلكتروني (اختياري)</label>
+                        <input type="email" id="user_email" name="user_email" placeholder="example@email.com">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="user_city">المدينة (اختياري)</label>
+                        <input type="text" id="user_city" name="user_city" placeholder="القاهرة مثلاً">
+                    </div>
+                </div>
+                <div class="actions">
+                    <button type="submit" class="btn">تأكيد الدعم الآن</button>
+                    <a href="/hub/candidate/{{ candidate.id }}/" class="btn btn-secondary">العودة للصفحة</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        // Keep phone numeric and capped at 11
+        (function(){
+            const phone = document.getElementById('user_phone');
+            if (phone) {
+                phone.addEventListener('input', () => {
+                    const d = phone.value.replace(/\D+/g, '').slice(0, 11);
+                    if (phone.value !== d) phone.value = d;
+                });
+            }
+            const nid = document.getElementById('user_national_id');
+            if (nid) {
+                nid.addEventListener('input', () => {
+                    const d = nid.value.replace(/\D+/g, '').slice(0, 14);
+                    if (nid.value !== d) nid.value = d;
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
+
+

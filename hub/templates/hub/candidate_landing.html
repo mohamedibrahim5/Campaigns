@@ -778,28 +778,27 @@
         .modal {
             display: none;
             position: fixed;
-            z-index: 1000;
+            z-index: 2000;
             left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(3px);
+            padding: 16px;
         }
 
         .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
+            background-color: #fff;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 460px;
+            max-height: calc(100vh - 32px);
             overflow-y: auto;
             position: relative;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-            transform: translateY(-50px);
-            animation: modalSlideIn 0.3s ease-out forwards;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
         }
 
         @keyframes modalSlideIn {
@@ -1104,18 +1103,23 @@
             font-size: 0.9rem;
         }
     </style>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="navbar-content">
-            <a href="#bio" class="navbar-item">📖 نبذة عن المرشح</a>
-            <a href="#program" class="navbar-item">📋 البرنامج الانتخابي</a>
-            <a href="#events" class="navbar-item">📅 الفعاليات</a>
-            <a href="#speeches" class="navbar-item">🎤 الخطابات</a>
-            <a href="#gallery" class="navbar-item">🖼️ المعرض</a>
-            <a href="#polls" class="navbar-item">📊 الاستطلاعات</a>
-            <a href="#contact" class="navbar-item">📞 التواصل</a>
+    <!-- Drawer Menu -->
+    <div id="drawer" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100vh; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.1); z-index: 2000; transition: right 0.3s ease; padding: 20px;">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
+            <strong style="color:#667eea;">القائمة</strong>
+            <button onclick="toggleDrawer(false)" style="background:none;border:none;font-size:1.6rem;cursor:pointer">×</button>
         </div>
-    </nav>
+        <a href="#bio" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">📖 نبذة عن المرشح</a>
+        <a href="#program" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">📋 البرنامج الانتخابي</a>
+        <a href="#events" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">📅 الفعاليات</a>
+        <a href="#speeches" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">🎤 الخطابات</a>
+        <a href="#gallery" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">🖼️ المعرض</a>
+        <a href="#polls" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">📊 الاستطلاعات</a>
+        <a href="#contact" class="navbar-item" onclick="toggleDrawer(false)" style="display:block;">📞 التواصل</a>
+    </div>
+    <button id="drawerToggler" onclick="toggleDrawer(true)" style="position: fixed; top: 14px; left: 14px; z-index: 2100; background: linear-gradient(45deg, #667eea, #764ba2); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+        ☰ القائمة
+    </button>
 
     <div class="container">
         <!-- Header Section -->
@@ -1142,7 +1146,7 @@
                 </div>
             </div>
             
-            <div class="quick-actions">
+            <!-- <div class="quick-actions">
                 {% if candidate_bot %}
                     <a href="{{ candidate_bot.bot_link|default:'#' }}" class="action-btn telegram" target="_blank">
                         🤖 انضم للبوت
@@ -1156,7 +1160,7 @@
                         🌐 الموقع الرسمي
                     </a> -->
                 {% endif %}
-            </div>
+            </div> -->
         </div>
 
         <!-- CTA Stripe -->
@@ -1168,7 +1172,8 @@
                 <div class="cta-pill">🎤 <span>الخطابات:</span> <span class="num">{{ speeches|length }}</span></div>
             </div>
             <div class="cta-actions">
-                <button class="action-btn support" onclick="openSupportModal()">💪 دعم المرشح</button>
+                <a href="/hub/candidate/{{ candidate.id }}/support/" class="action-btn support">💪 دعم المرشح</a>
+                <a href="/hub/candidate/{{ candidate.id }}/ask/" class="action-btn" style="background: linear-gradient(45deg, #20c997, #28a745);">❓ اسأل المرشح</a>
                 {% if candidate_bot %}
                 <a href="{{ candidate_bot.bot_link|default:'#' }}" class="action-btn telegram" target="_blank">🤖 انضم للبوت</a>
                 {% endif %}
@@ -1483,55 +1488,30 @@
         </div>
     </div>
 
-    <!-- Support Modal -->
-    <div id="supportModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeSupportModal()">&times;</span>
-            <h2>💪 دعم المرشح</h2>
-            <form method="post" id="supportForm">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="support">
-                
+    <!-- Support Section (in-page instead of modal) -->
+    <!-- <div class="card" id="support-section">
+        <h2>💪 ادعم المرشح</h2>
+        <p style="color:#666; margin-bottom: 10px;">سجّل بياناتك لإضافة دعمك فوراً</p>
+        <form method="post" id="supportFormInline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="support">
+            <div class="form-grid">
                 <div class="form-group">
                     <label for="user_name">الاسم الكامل *</label>
                     <input type="text" id="user_name" name="user_name" required>
                 </div>
-                
                 <div class="form-group">
                     <label for="user_phone">رقم الهاتف *</label>
-                    <input type="tel" id="user_phone" name="user_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678" title="أدخل رقم هاتف مكوّن من 11 رقمًا">
+                    <input type="tel" id="user_phone" name="user_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678">
                 </div>
-                
                 <div class="form-group">
                     <label for="user_national_id">الرقم القومي *</label>
-                    <input type="text" id="user_national_id" name="user_national_id" 
-                           maxlength="14" pattern="[0-9]{14}" 
-                           title="يجب أن يكون الرقم القومي 14 رقم فقط" required>
+                    <input type="text" id="user_national_id" name="user_national_id" minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" placeholder="14 رقمًا" required>
                 </div>
-                
-                <div class="form-group">
-                    <label for="user_email">البريد الإلكتروني</label>
-                    <input type="email" id="user_email" name="user_email">
-                </div>
-                
-                <div class="form-group">
-                    <label for="user_city">المدينة</label>
-                    <input type="text" id="user_city" name="user_city">
-                </div>
-                
-                <div class="form-group">
-                    <label for="support_level">مستوى الدعم</label>
-                    <select id="support_level" name="support_level">
-                        <option value="supporter">مؤيد</option>
-                        <option value="volunteer">متطوع</option>
-                        <option value="donor">داعم مالي</option>
-                    </select>
-                </div>
-                
-                <button type="submit" class="submit-btn">إرسال الدعم</button>
-            </form>
-        </div>
-    </div>
+            </div>
+            <button type="submit" class="submit-btn">تأكيد الدعم الآن</button>
+        </form>
+    </div> -->
 
     <!-- Poll Modal -->
     <div id="pollModal" class="modal">
@@ -1597,34 +1577,15 @@
             return token.value;
         }
 
-        // Navigation highlighting
-        function updateActiveNav() {
-            const sections = document.querySelectorAll('[id]');
-            const navLinks = document.querySelectorAll('.navbar-item');
-            
-            let current = '';
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                const sectionHeight = section.clientHeight;
-                if (window.pageYOffset >= sectionTop - 100) {
-                    current = section.getAttribute('id');
-                }
-            });
-
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === '#' + current) {
-                    link.classList.add('active');
-                }
-            });
+        // Drawer controls
+        function toggleDrawer(open) {
+            const drawer = document.getElementById('drawer');
+            if (!drawer) return;
+            drawer.style.right = open ? '0' : '-280px';
         }
 
-        // Update active nav on scroll
-        window.addEventListener('scroll', updateActiveNav);
-        
-        // Update active nav on load
+        // Init on load
         document.addEventListener('DOMContentLoaded', function() {
-            updateActiveNav();
             // Enforce numeric-only and max length 11 for phone inputs
             const phoneInputs = ['user_phone', 'voter_phone']
                 .map(id => document.getElementById(id))
@@ -1646,11 +1607,16 @@
 
         // Support Modal Functions
         function openSupportModal() {
-            document.getElementById('supportModal').style.display = 'block';
+            const modal = document.getElementById('supportModal');
+            if (!modal) return;
+            modal.style.display = 'block';
+            modal.scrollTop = 0;
         }
 
         function closeSupportModal() {
-            document.getElementById('supportModal').style.display = 'none';
+            const modal = document.getElementById('supportModal');
+            if (!modal) return;
+            modal.style.display = 'none';
         }
 
         // Poll Modal Functions

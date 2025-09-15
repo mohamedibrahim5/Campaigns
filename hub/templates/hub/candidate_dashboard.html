@@ -530,6 +530,7 @@
             <button class="tab" onclick="showTab('polls')">الاستطلاعات</button>
             <button class="tab" onclick="showTab('gallery')">المعرض</button>
             <button class="tab" onclick="showTab('supporters')">المؤيدون</button>
+            <button class="tab" onclick="showTab('questions')">الأسئلة</button>
         </div>
 
         <!-- Profile Tab -->
@@ -656,6 +657,68 @@
             </form>
         </div>
 
+        <!-- Questions Tab -->
+        <div id="questions" class="tab-content">
+            <div class="card">
+                <div style="display:flex;align-items:center;justify-content:space-between; margin-bottom: 1rem;">
+                    <h2>أسئلة الجمهور</h2>
+                    {% if questions %}
+                    <button class="btn" onclick="exportQuestionsPDF()">تصدير PDF</button>
+                    {% endif %}
+                </div>
+                {% if questions %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>الاسم</th>
+                                <th>السؤال</th>
+                                <th>الإجابة</th>
+                                <th>الحالة</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for q in questions %}
+                            <tr data-q-id="{{ q.id }}" data-q-text="{{ q.question|escape }}" data-q-name="{{ q.bot_user.first_name }} {{ q.bot_user.last_name }}" data-q-date="{{ q.asked_at|date:'Y-m-d H:i' }}" data-q-answer="{{ q.answer|default:''|escape }}">
+                                <td>{{ q.asked_at|date:"Y-m-d H:i" }}</td>
+                                <td>{{ q.bot_user.first_name }} {{ q.bot_user.last_name }}</td>
+                                <td style="white-space: pre-wrap; overflow:hidden; text-overflow: ellipsis; max-width: 320px;">{{ q.question }}</td>
+                                <td style="white-space: pre-wrap; color:#2f855a;">{{ q.answer|default:'—' }}</td>
+                                <td>{% if q.is_answered %}<span style="color:#28a745;">مجاب</span>{% else %}<span style="color:#dc3545;">بانتظار الإجابة</span>{% endif %}</td>
+                                <td><button type="button" class="btn" onclick="openQuestionModal(this)">عرض</button></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p style="color:#888;">لا توجد أسئلة حتى الآن.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Question Modal -->
+        <div id="questionModal" class="modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3000;">
+            <div class="modal-content" style="background:#fff; max-width: 680px; width: calc(100% - 32px); margin: 40px auto; padding: 20px; border-radius: 12px; position: relative;">
+                <span class="modal-close" onclick="closeQuestionModal()" style="position:absolute; top:10px; left:12px; font-size: 24px; cursor: pointer;">&times;</span>
+                <h3 id="qmTitle" style="margin-top:0;">سؤال الجمهور</h3>
+                <div id="qmMeta" style="color:#666; font-size: 0.9rem; margin-bottom: 10px;"></div>
+                <div id="qmText" style="white-space: pre-wrap; background:#f8f9fa; padding: 12px; border-radius: 8px; border:1px solid #e9ecef; margin-bottom: 14px;"></div>
+                <form method="post" onsubmit="return submitQuestionAnswer(event)">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="answer_question">
+                    <input type="hidden" id="qmId" name="question_id">
+                    <div class="form-group">
+                        <label for="qmAnswer">الإجابة</label>
+                        <textarea id="qmAnswer" name="answer" rows="4" placeholder="اكتب إجابتك هنا..."></textarea>
+                    </div>
+                    <div style="display:flex; gap: 10px;">
+                        <button type="submit" class="btn btn-success">حفظ الإجابة</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeQuestionModal()">إلغاء</button>
+                    </div>
+                </form>
+            </div>
+        </div>
         <!-- Events Tab -->
         <div id="events" class="tab-content">
             <div class="card">
@@ -1395,6 +1458,78 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }, 500);
+        }
+        // === Questions: modal and export ===
+        function openQuestionModal(btn) {
+            try {
+                const tr = btn.closest('tr');
+                if (!tr) return;
+                const id = tr.getAttribute('data-q-id');
+                const text = tr.getAttribute('data-q-text') || '';
+                const name = tr.getAttribute('data-q-name') || '';
+                const date = tr.getAttribute('data-q-date') || '';
+                const answer = tr.getAttribute('data-q-answer') || '';
+                const idEl = document.getElementById('qmId');
+                const metaEl = document.getElementById('qmMeta');
+                const textEl = document.getElementById('qmText');
+                const answerEl = document.getElementById('qmAnswer');
+                const modal = document.getElementById('questionModal');
+                if (!idEl || !metaEl || !textEl || !answerEl || !modal) return;
+                idEl.value = id;
+                metaEl.textContent = `${name} • ${date}`;
+                textEl.textContent = text;
+                answerEl.value = answer;
+                modal.style.display = 'block';
+            } catch (e) { console.error('openQuestionModal error', e); }
+        }
+
+        function closeQuestionModal() {
+            const modal = document.getElementById('questionModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function submitQuestionAnswer(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(() => {
+                closeQuestionModal();
+                window.location.reload();
+            }).catch(err => {
+                console.error('submitQuestionAnswer error', err);
+                closeQuestionModal();
+            });
+            return false;
+        }
+
+        function exportQuestionsPDF() {
+            const table = document.querySelector('#questions .data-table');
+            if (!table) { alert('لا توجد أسئلة للتصدير'); return; }
+            const w = window.open('', '_blank');
+            w.document.write(`
+                <html dir="rtl" lang="ar">
+                <head>
+                    <meta charset="utf-8">
+                    <title>أسئلة الجمهور - {{ candidate.name }}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; direction: rtl; margin: 20px; color:#333; }
+                        h1 { text-align:center; color:#667eea; }
+                        table { width:100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+                        th, td { border:1px solid #ddd; padding:8px; text-align:right; }
+                        th { background:#f0f0f0; }
+                    </style>
+                </head>
+                <body>
+                    <h1>أسئلة الجمهور - {{ candidate.name }}</h1>
+                    ${table.outerHTML}
+                </body>
+                </html>
+            `);
+            w.document.close(); w.focus(); w.print(); w.close();
         }
     </script>
 </body>
