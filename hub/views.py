@@ -1883,6 +1883,34 @@ def candidate_login(request: HttpRequest, candidate_id: str) -> HttpResponse:
 
 
 @login_required()
+def candidate_dashboard_me(request: HttpRequest) -> HttpResponse:
+    """Dashboard without UUID in URL - resolves candidate from user profile."""
+    if not hasattr(request.user, 'candidate_profile'):
+        return redirect('/accounts/login/?next=/hub/candidate/dashboard/')
+    return redirect('candidate_dashboard', candidate_id=request.user.candidate_profile.candidate.id)
+
+
+def candidate_login_simple(request: HttpRequest) -> HttpResponse:
+    """Login without UUID - redirects to the user's candidate dashboard on success."""
+    # If already authenticated and has candidate profile, go to dashboard
+    if request.user.is_authenticated and hasattr(request.user, 'candidate_profile'):
+        return redirect('candidate_dashboard', candidate_id=request.user.candidate_profile.candidate.id)
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user and hasattr(user, 'candidate_profile'):
+            login(request, user)
+            return redirect('candidate_dashboard', candidate_id=user.candidate_profile.candidate.id)
+        else:
+            messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')
+
+    # Reuse the same template; hide links that depend on candidate_id via context
+    return render(request, 'hub/candidate_login.html', {'candidate': None})
+
+
+@login_required()
 def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse:
     """Individual candidate dashboard for managing their profile and campaign data"""
     try:

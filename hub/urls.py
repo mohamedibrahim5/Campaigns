@@ -28,7 +28,9 @@ from .views import (
     public_landing,
     candidate_landing,
     candidate_login,
+    candidate_login_simple,
     candidate_dashboard,
+    candidate_dashboard_me,
     candidate_support,
     candidate_ask,
     user_profile,
@@ -68,12 +70,14 @@ urlpatterns = [
     # Public landing page
     path('public/', public_landing, name='public_landing'),
     
-    # Candidate landing pages
+    # Candidate login and dashboards
+    path('candidate/login/', candidate_login_simple, name='candidate_login_simple'),
+    path('candidate/dashboard/', candidate_dashboard_me, name='candidate_dashboard_me'),
+    
+    # Candidate landing pages (must come after the non-parameterized routes above)
     path('candidate/<str:candidate_id>/', candidate_landing, name='candidate_landing'),
     path('candidate/<str:candidate_id>/support/', candidate_support, name='candidate_support'),
     path('candidate/<str:candidate_id>/ask/', candidate_ask, name='candidate_ask'),
-    
-    # Candidate login and dashboards
     path('candidate/<str:candidate_id>/login/', candidate_login, name='candidate_login'),
     path('candidate/<str:candidate_id>/dashboard/', candidate_dashboard, name='candidate_dashboard'),
     
