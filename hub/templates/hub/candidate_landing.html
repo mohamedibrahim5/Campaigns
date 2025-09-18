@@ -80,6 +80,10 @@
             transition: all 0.3s ease;
             white-space: nowrap;
             font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            line-height: 1;
         }
 
         .navbar-item:hover {
@@ -828,6 +832,9 @@
             color: #333;
         }
 
+        /* Hide close icons in all dialogs as requested */
+        .modal .modal-close { display: none; }
+
         /* Animations */
         @keyframes slideInDown {
             from {
@@ -1120,10 +1127,10 @@
         <a href="#polls" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">📊 الاستطلاعات</a>
         <a href="#contact" class="navbar-item" onclick="toggleDrawer(false)" style="display:block;">📞 التواصل</a>
         <hr style="margin:14px 0; border:none; border-top:1px solid #eee;">
-        <a href="/hub/candidate/{{ candidate.id }}/support/" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px; background: linear-gradient(45deg, #28a745, #20c997);">💪 دعم المرشح</a>
-        <a href="/hub/candidate/{{ candidate.id }}/ask/" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px; background: linear-gradient(45deg, #20c997, #28a745);">❓ اسأل المرشح</a>
+        <a href="#" class="navbar-item" onclick="openSupportModal(); toggleDrawer(false); return false;" style="display:flex; align-items:center; gap:8px; margin-bottom:10px; background: linear-gradient(45deg, #28a745, #20c997);"><span>💪</span><span>دعم المرشح</span></a>
+        <a href="#" class="navbar-item" onclick="openAskModal(); toggleDrawer(false); return false;" style="display:flex; align-items:center; gap:8px; margin-bottom:10px; background: linear-gradient(45deg, #20c997, #28a745);"><span>❓</span><span>اسأل المرشح</span></a>
         {% if candidate_bot %}
-        <a href="{{ candidate_bot.bot_link|default:'#' }}" class="navbar-item" onclick="toggleDrawer(false)" target="_blank" style="display:block; background: linear-gradient(45deg, #0088cc, #00a8ff);">🤖 انضم للبوت</a>
+                <a href="{{ candidate_bot.bot_link|default:'#' }}" class="navbar-item" onclick="toggleDrawer(false)" target="_blank" style="display:flex; align-items:center; gap:8px; background: linear-gradient(45deg, #0088cc, #00a8ff);"><span>🤖</span><span>انضم للبوت</span></a>
         {% endif %}
     </div>
     <button id="drawerToggler" onclick="toggleDrawer(true)" style="position: fixed; top: 14px; left: 14px; z-index: 2100; background: linear-gradient(45deg, #667eea, #764ba2); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
@@ -1181,8 +1188,8 @@
                 <div class="cta-pill">🎤 <span>الخطابات:</span> <span class="num">{{ speeches|length }}</span></div>
             </div>
             <div class="cta-actions">
-                <a href="/hub/candidate/{{ candidate.id }}/support/" class="action-btn support">💪 دعم المرشح</a>
-                <a href="/hub/candidate/{{ candidate.id }}/ask/" class="action-btn" style="background: linear-gradient(45deg, #20c997, #28a745);">❓ اسأل المرشح</a>
+        <a href="#" onclick="openSupportModal(); return false;" class="action-btn support" style="display:inline-flex; align-items:center; gap:8px;"><span>💪</span><span>دعم المرشح</span></a>
+        <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background: linear-gradient(45deg, #20c997, #28a745); display:inline-flex; align-items:center; gap:8px;"><span>❓</span><span>اسأل المرشح</span></a>
                 {% if candidate_bot %}
                 <a href="{{ candidate_bot.bot_link|default:'#' }}" class="action-btn telegram" target="_blank">🤖 انضم للبوت</a>
                 {% endif %}
@@ -1570,6 +1577,185 @@
         </div>
     </div>
 
+    <!-- Support Modal -->
+    <div id="supportModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeSupportModal()">&times;</span>
+            <h2>💪 دعم المرشح</h2>
+            <p style="color:#666; margin-bottom: 10px;">سجّل بياناتك لإضافة دعمك فوراً</p>
+            <form method="post" id="supportForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="support">
+                <div class="form-group">
+                    <label for="user_name">الاسم الكامل *</label>
+                    <input type="text" id="user_name" name="user_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_city">المدينة (اختياري)</label>
+                    <input type="text" id="user_city" name="user_city" placeholder="مثال: القاهرة">
+                </div>
+                <div class="form-group">
+                    <label for="user_phone">رقم الهاتف *</label>
+                    <input type="tel" id="user_phone" name="user_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678">
+                </div>
+                <div class="form-group">
+                    <label for="user_national_id">الرقم القومي *</label>
+                    <input type="text" id="user_national_id" name="user_national_id" minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" placeholder="14 رقمًا" required>
+                </div>
+                <div class="form-group">
+                    <label for="support_level">مستوى الدعم</label>
+                    <select id="support_level" name="support_level">
+                        <option value="">اختر (اختياري)</option>
+                        <option value="low">مؤيد</option>
+                        <option value="medium">مشارك بالحضور</option>
+                        <option value="high">متطوع نشط</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">تأكيد الدعم الآن</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ask Modal -->
+    <div id="askModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeAskModal()">&times;</span>
+            <h2>❓ اسأل المرشح</h2>
+            <form method="post" id="askForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="ask">
+                <div class="form-group">
+                    <label for="asker_name">الاسم الكامل *</label>
+                    <input type="text" id="asker_name" name="asker_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="asker_phone">رقم الهاتف *</label>
+                    <input type="tel" id="asker_phone" name="asker_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678">
+                </div>
+                <div class="form-group">
+                    <label for="asker_national_id">الرقم القومي (اختياري)</label>
+                    <input type="text" id="asker_national_id" name="asker_national_id" minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" placeholder="14 رقمًا">
+                </div>
+                <div class="form-group">
+                    <label for="question_text">سؤالك *</label>
+                    <textarea id="question_text" name="question_text" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">إرسال السؤال</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div id="galleryModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="modal-close" onclick="closeGalleryModal()">&times;</span>
+            <h2 id="galleryTitle" style="margin-bottom: 12px;"></h2>
+            <div id="galleryContent"></div>
+        </div>
+    </div>
+
+    <!-- Support Modal -->
+    <div id="supportModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeSupportModal()">&times;</span>
+            <h2>💪 دعم المرشح</h2>
+            <p style="color:#666; margin-bottom: 10px;">سجّل بياناتك لإضافة دعمك فوراً</p>
+            <form method="post" id="supportForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="support">
+                <div class="form-group">
+                    <label for="user_name">الاسم الكامل *</label>
+                    <input type="text" id="user_name" name="user_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_phone">رقم الهاتف *</label>
+                    <input type="tel" id="user_phone" name="user_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678">
+                </div>
+                <div class="form-group">
+                    <label for="user_national_id">الرقم القومي *</label>
+                    <input type="text" id="user_national_id" name="user_national_id" minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" placeholder="14 رقمًا" required>
+                </div>
+                <button type="submit" class="submit-btn">تأكيد الدعم الآن</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ask Modal -->
+    <div id="askModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeAskModal()">&times;</span>
+            <h2>❓ اسأل المرشح</h2>
+            <form method="post" id="askForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="ask">
+                <div class="form-group">
+                    <label for="asker_name">الاسم الكامل *</label>
+                    <input type="text" id="asker_name" name="asker_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="asker_phone">رقم الهاتف *</label>
+                    <input type="tel" id="asker_phone" name="asker_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678">
+                </div>
+                <div class="form-group">
+                    <label for="question_text">سؤالك *</label>
+                    <textarea id="question_text" name="question_text" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">إرسال السؤال</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Support Modal -->
+    <div id="supportModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeSupportModal()">&times;</span>
+            <h2>💪 دعم المرشح</h2>
+            <p style="color:#666; margin-bottom: 10px;">سجّل بياناتك لإضافة دعمك فوراً</p>
+            <form method="post" id="supportForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="support">
+                <div class="form-group">
+                    <label for="user_name">الاسم الكامل *</label>
+                    <input type="text" id="user_name" name="user_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_phone">رقم الهاتف *</label>
+                    <input type="tel" id="user_phone" name="user_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678">
+                </div>
+                <div class="form-group">
+                    <label for="user_national_id">الرقم القومي *</label>
+                    <input type="text" id="user_national_id" name="user_national_id" minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" placeholder="14 رقمًا" required>
+                </div>
+                <button type="submit" class="submit-btn">تأكيد الدعم الآن</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ask Modal -->
+    <div id="askModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeAskModal()">&times;</span>
+            <h2>❓ اسأل المرشح</h2>
+            <form method="post" id="askForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="ask">
+                <div class="form-group">
+                    <label for="asker_name">الاسم الكامل *</label>
+                    <input type="text" id="asker_name" name="asker_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="asker_phone">رقم الهاتف *</label>
+                    <input type="tel" id="asker_phone" name="asker_phone" required minlength="11" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" placeholder="مثال: 01012345678">
+                </div>
+                <div class="form-group">
+                    <label for="question_text">سؤالك *</label>
+                    <textarea id="question_text" name="question_text" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">إرسال السؤال</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Get CSRF token function
         function getCSRFToken() {
@@ -1598,7 +1784,7 @@
         // Init on load
         document.addEventListener('DOMContentLoaded', function() {
             // Ensure modals are direct children of <body> to avoid positioning/scroll issues
-            ['supportModal','pollModal','eventModal','speechModal'].forEach(id => {
+            ['supportModal','pollModal','eventModal','speechModal','galleryModal','askModal'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.parentNode !== document.body) {
                     document.body.appendChild(el);
@@ -1609,7 +1795,7 @@
             document.body.style.overflow = '';
 
             // Enforce numeric-only and max length 11 for phone inputs
-            const phoneInputs = ['user_phone', 'voter_phone']
+            const phoneInputs = ['user_phone', 'voter_phone', 'asker_phone']
                 .map(id => document.getElementById(id))
                 .filter(Boolean);
             phoneInputs.forEach(inp => {
@@ -1625,20 +1811,42 @@
                     }
                 });
             });
+
+            // Enforce numeric-only and length 14 for national id inputs (optional or required)
+            const nidInputs = ['user_national_id', 'asker_national_id']
+                .map(id => document.getElementById(id))
+                .filter(Boolean);
+            nidInputs.forEach(inp => {
+                inp.addEventListener('input', () => {
+                    const digits = inp.value.replace(/\D+/g, '').slice(0, 14);
+                    if (inp.value !== digits) inp.value = digits;
+                });
+                inp.addEventListener('blur', () => {
+                    if (inp.hasAttribute('required')) {
+                        if (inp.value.length !== 14) inp.setCustomValidity('أدخل رقم قومي مكوّن من 14 رقمًا');
+                        else inp.setCustomValidity('');
+                    } else {
+                        if (inp.value.length && inp.value.length !== 14) inp.setCustomValidity('أدخل 14 رقمًا أو اتركه فارغًا');
+                        else inp.setCustomValidity('');
+                    }
+                });
+            });
         });
 
         // Support Modal Functions
         function openSupportModal() {
             const modal = document.getElementById('supportModal');
             if (!modal) return;
-            modal.style.display = 'block';
+            modal.style.display = 'flex';
             modal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
         }
 
         function closeSupportModal() {
             const modal = document.getElementById('supportModal');
             if (!modal) return;
             modal.style.display = 'none';
+            document.body.style.overflow = '';
         }
 
         // Poll Modal Functions
@@ -1692,6 +1900,22 @@
         function closePollModal() {
             const modal = document.getElementById('pollModal');
             if (modal) modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Ask Modal Functions
+        function openAskModal() {
+            const modal = document.getElementById('askModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            modal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAskModal() {
+            const modal = document.getElementById('askModal');
+            if (!modal) return;
+            modal.style.display = 'none';
             document.body.style.overflow = '';
         }
 
@@ -1764,16 +1988,17 @@
             if (speechData) {
                 document.getElementById('speechTitle').textContent = speechData.title;
                 
+                const fullContent = speechData.content
+                    ? '<p><strong>المحتوى الكامل:</strong></p><div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 10px 0;">' + speechData.content + '</div>'
+                    : '';
                 let content = `
                     <div style="margin-bottom: 20px;">
                         <h3 style="color: #667eea; margin-bottom: 15px;">تفاصيل الخطاب</h3>
                         <p><strong>العنوان:</strong> ${speechData.title}</p>
                         <p><strong>التاريخ:</strong> ${speechData.date}</p>
                         <p><strong>الملخص:</strong></p>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 10px 0;">
-                            ${speechData.summary}
-                        </div>
-                        ${speechData.content ? `<p><strong>المحتوى الكامل:</strong></p><div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 10px 0;">${speechData.content}</div>` : ''}
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 10px 0;">${speechData.summary}</div>
+                        ${fullContent}
                     </div>
                 `;
                 
@@ -1793,6 +2018,45 @@
             document.body.style.overflow = '';
         }
 
+        // Gallery Modal Functions
+        function openGalleryModal(itemId) {
+            const data = getGalleryData(itemId);
+            const modal = document.getElementById('galleryModal');
+            const titleEl = document.getElementById('galleryTitle');
+            const contentEl = document.getElementById('galleryContent');
+            if (!modal || !contentEl) return;
+
+            titleEl.textContent = data ? data.title : 'العنصر';
+
+            if (data) {
+                const descHtml = data.description ? '<p style="margin-top:12px; color:#555;">' + data.description + '</p>' : '';
+                if (data.media_type === 'image') {
+                    contentEl.innerHTML = `
+                        <div style="display:flex; justify-content:center;">
+                            <img src="${data.url}" alt="${data.title}" style="max-width:100%; max-height:70vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+                        </div>
+                    ` + descHtml;
+                } else {
+                    contentEl.innerHTML = `
+                        <video controls style="width:100%; max-height:70vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15); background:#000;">
+                            <source src="${data.url}" type="video/mp4">
+                        </video>
+                    ` + descHtml;
+                }
+            } else {
+                contentEl.innerHTML = '<p>لا توجد تفاصيل متاحة لهذا العنصر.</p>';
+            }
+
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeGalleryModal() {
+            const modal = document.getElementById('galleryModal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
         // Get poll data
         function getPollData(pollId) {
             const polls = {
@@ -1801,10 +2065,10 @@
                     question: `{{ poll.question|escapejs }}`,
                     options: [
                         {% for opt in poll.options_with_counts %}
-                        { index: {{ opt.index }}, text: '{{ opt.text|escapejs }}' },
+                        { index: {{ opt.index }}, text: '{{ opt.text|escapejs }}' }{% if not forloop.last %},{% endif %}
                         {% endfor %}
                     ]
-                },
+                }{% if not forloop.last %},{% endif %}
                 {% endfor %}
             };
             return polls[pollId];
@@ -1823,7 +2087,7 @@
                     type: `{{ event.get_event_type_display|escapejs }}`,
                     latitude: {{ event.latitude|default:"null" }},
                     longitude: {{ event.longitude|default:"null" }}
-                },
+                }{% if not forloop.last %},{% endif %}
                 {% endfor %}
             };
             return events[eventId];
@@ -1838,15 +2102,30 @@
                     summary: `{{ speech.summary|escapejs }}`,
                     content: `{{ speech.content|escapejs|default:"" }}`,
                     date: `{{ speech.created_at|date:"M d, Y" }}`
-                },
+                }{% if not forloop.last %},{% endif %}
                 {% endfor %}
             };
             return speeches[speechId];
         }
 
+        // Get gallery data
+        function getGalleryData(itemId) {
+            const items = {
+                {% for item in gallery_items %}
+                '{{ item.id }}': {
+                    title: `{{ item.title|escapejs }}`,
+                    description: `{{ item.description|default:''|escapejs }}`,
+                    media_type: `{{ item.media_type|escapejs }}`,
+                    url: `{{ item.file.url|escapejs }}`
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            };
+            return items[itemId];
+        }
+
         // Close modals when clicking outside
         window.addEventListener('click', function(e) {
-            const modals = ['supportModal', 'pollModal', 'eventModal', 'speechModal'];
+            const modals = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal'];
             for (const modalId of modals) {
                 const modal = document.getElementById(modalId);
                 if (modal && e.target === modal) {
@@ -1869,7 +2148,7 @@
 
         // ===== Global safeguards to prevent lock-up =====
         function isAnyModalOpen() {
-            const ids = ['supportModal', 'pollModal', 'eventModal', 'speechModal'];
+            const ids = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal'];
             for (const id of ids) {
                 const el = document.getElementById(id);
                 if (el && el.style.display && el.style.display !== 'none') {
@@ -1882,7 +2161,7 @@
         // Press ESC to close any open modal and restore scroll
         window.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                ['supportModal', 'pollModal', 'eventModal', 'speechModal'].forEach(id => {
+                ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el && el.style.display && el.style.display !== 'none') {
                         el.style.display = 'none';
