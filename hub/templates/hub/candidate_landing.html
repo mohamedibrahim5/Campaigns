@@ -6,6 +6,16 @@
     <title>{{ candidate.name }} - صفحة المرشح</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1f2937 0%, #111827 50%, #0b1220 100%);
+            --brand: #6366f1;
+            --brand-2: #8b5cf6;
+            --accent: #22c55e;
+            --text: #0f172a;
+            --muted: #6b7280;
+            --card: rgba(255,255,255,0.98);
+            --glass: rgba(255,255,255,0.08);
+        }
         * {
             margin: 0;
             padding: 0;
@@ -14,12 +24,12 @@
 
         body {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            line-height: 1.65;
+            color: #0f172a;
+            background: var(--bg-gradient);
             min-height: 100vh;
             scroll-behavior: smooth;
-            padding-top: 80px;
+            padding-top: 78px;
             position: relative;
             overflow-x: hidden;
         }
@@ -51,12 +61,12 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(17, 24, 39, 0.6);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             padding: 15px 0;
             z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
         }
 
         .navbar-content {
@@ -71,8 +81,8 @@
         }
 
         .navbar-item {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
+            background: linear-gradient(45deg, var(--brand), var(--brand-2));
+            color: #fff;
             text-decoration: none;
             padding: 10px 20px;
             border-radius: 25px;
@@ -93,37 +103,23 @@
             text-decoration: none;
         }
 
-        .navbar-item.active {
-            background: linear-gradient(45deg, #28a745, #20c997);
-        }
+        .navbar-item.active { background: linear-gradient(45deg, var(--accent), #10b981); }
 
         /* Header */
         .header {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 
-                0 20px 40px rgba(0, 0, 0, 0.1),
-                0 0 0 1px rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1));
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 28px;
+            padding: 28px;
+            margin-bottom: 28px;
             text-align: center;
-            min-height: 180px;
+            min-height: 200px;
             position: relative;
-            overflow: visible;
-            animation: slideInDown 0.8s ease-out;
+            overflow: hidden;
+            animation: slideInDown 0.6s ease-out;
         }
 
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-            border-radius: 25px 25px 0 0;
-        }
+        .header::before { display:none; }
 
         .candidate-profile {
             display: flex;
@@ -134,25 +130,62 @@
             animation: fadeInUp 1s ease-out 0.2s both;
         }
 
+        /* Avatar + Logo badge redesign */
+        .avatar-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 128px;
+            height: 128px;
+        }
+        .avatar-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            background: conic-gradient(from 180deg at 50% 50%, rgba(102,126,234,0.35), rgba(118,75,162,0.35), rgba(102,126,234,0.35));
+            filter: blur(8px);
+            z-index: 0;
+        }
+
         .profile-image {
-            width: 80px;
-            height: 80px;
+            width: 128px;
+            height: 128px;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid #fff;
+            border: 5px solid #fff;
             box-shadow: 
-                0 8px 25px rgba(102, 126, 234, 0.3),
-                0 0 0 3px rgba(102, 126, 234, 0.1);
+                0 12px 35px rgba(102, 126, 234, 0.35),
+                0 0 0 4px rgba(102, 126, 234, 0.12);
             transition: all 0.3s ease;
             animation: pulse 2s infinite;
+            position: relative;
+            z-index: 1;
         }
 
         .profile-image:hover {
             transform: scale(1.05);
             box-shadow: 
-                0 12px 35px rgba(102, 126, 234, 0.4),
-                0 0 0 5px rgba(102, 126, 234, 0.2);
+                0 18px 45px rgba(102, 126, 234, 0.45),
+                0 0 0 6px rgba(102, 126, 234, 0.2);
         }
+
+        .logo-badge {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, 0.15),
+                0 0 0 3px rgba(102,126,234,0.12);
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            z-index: 2;
+        }
+        .logo-badge:hover { transform: scale(1.05) rotate(3deg); }
 
         .candidate-logo {
             width: 60px;
@@ -953,10 +986,9 @@
                 gap: 15px;
             }
             
-            .profile-image {
-                width: 70px;
-                height: 70px;
-            }
+            .avatar-wrapper { width: 96px; height: 96px; }
+            .profile-image { width: 96px; height: 96px; border-width: 4px; }
+            .logo-badge { width: 48px; height: 48px; border-width: 3px; bottom: -8px; right: -8px; }
             
             .candidate-logo {
                 width: 50px;
@@ -1140,24 +1172,40 @@
     <div class="container">
         <!-- Header Section -->
         <div class="header">
-            <div class="candidate-profile">
-                {% if candidate.profile_image %}
-                    <img src="{{ candidate.profile_image.url }}" alt="{{ candidate.name }}" class="profile-image">
-                {% else %}
-                    <div class="profile-image" style="background: linear-gradient(45deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
-                        {{ candidate.name|first }}
-                    </div>
-                {% endif %}
-                <div class="candidate-info">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-                    <h1>{{ candidate.name }}</h1>
+            <div class="candidate-profile" style="flex-direction:column; gap:18px;">
+                <div style="display:flex; align-items:center; gap:14px; justify-content:center;">
+                    <div class="avatar-wrapper" onclick="openAvatarModal()" style="cursor:pointer;">
+                        {% if candidate.profile_image %}
+                            <img src="{{ candidate.profile_image.url }}" alt="{{ candidate.name }}" class="profile-image">
+                        {% else %}
+                            <div class="profile-image" style="background: linear-gradient(45deg, var(--brand), var(--brand-2)); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                                {{ candidate.name|first }}
+                            </div>
+                        {% endif %}
                         {% if candidate.logo %}
-                            <img src="{{ candidate.logo.url }}" alt="شعار {{ candidate.name }}" class="candidate-logo">
+                            <img src="{{ candidate.logo.url }}" alt="شعار {{ candidate.name }}" class="logo-badge" onclick="openLogoModal(event)" style="cursor:pointer;">
                         {% endif %}
                     </div>
+                </div>
+                <div class="candidate-info" style="text-align:center;">
+                    <h1 style="font-size:2rem; letter-spacing:0.2px;">{{ candidate.name }}</h1>
                     <div class="position">{{ candidate.position }}</div>
                     {% if candidate.party %}
                         <div class="party">{{ candidate.party }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="quick-actions" style="margin-top:8px;">
+                    <a href="#" onclick="openSupportModal(); return false;" class="action-btn support" style="display:inline-flex; align-items:center; gap:8px;">
+                        <span>💪</span><span>ادعم المرشح الآن</span>
+                    </a>
+                    <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background: linear-gradient(45deg, #20c997, #28a745); display:inline-flex; align-items:center; gap:8px;">
+                        <span>❓</span><span>اسأل المرشح</span>
+                    </a>
+                    {% if candidate_bot %}
+                    <a href="{{ candidate_bot.bot_link|default:'#' }}" class="action-btn telegram" target="_blank" style="display:inline-flex; align-items:center; gap:8px;">
+                        <span>🤖</span><span>انضم للبوت</span>
+                    </a>
                     {% endif %}
                 </div>
             </div>
@@ -1179,8 +1227,8 @@
             </div> -->
         </div>
 
-        <!-- CTA Stripe -->
-        <div class="cta-stripe">
+        <!-- CTA Stripe / Social proof -->
+        <div class="cta-stripe" style="background: rgba(255,255,255,0.96); border:1px solid rgba(255,255,255,0.25);">
             <div class="cta-items">
                 <div class="cta-pill">💪 <span>المؤيدون:</span> <span class="num">{{ supporters_count }}</span></div>
                 <div class="cta-pill">📅 <span>الفعاليات:</span> <span class="num">{{ events|length }}</span></div>
@@ -1188,11 +1236,8 @@
                 <div class="cta-pill">🎤 <span>الخطابات:</span> <span class="num">{{ speeches|length }}</span></div>
             </div>
             <div class="cta-actions">
-        <a href="#" onclick="openSupportModal(); return false;" class="action-btn support" style="display:inline-flex; align-items:center; gap:8px;"><span>💪</span><span>دعم المرشح</span></a>
-        <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background: linear-gradient(45deg, #20c997, #28a745); display:inline-flex; align-items:center; gap:8px;"><span>❓</span><span>اسأل المرشح</span></a>
-                {% if candidate_bot %}
-                <a href="{{ candidate_bot.bot_link|default:'#' }}" class="action-btn telegram" target="_blank">🤖 انضم للبوت</a>
-                {% endif %}
+                <!-- <a href="#" onclick="openSupportModal(); return false;" class="action-btn support" style="display:inline-flex; align-items:center; gap:8px;"><span>💪</span><span>ابدأ الدعم</span></a>
+                <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background: linear-gradient(45deg, #20c997, #28a745); display:inline-flex; align-items:center; gap:8px;"><span>❓</span><span>اسأل الآن</span></a> -->
             </div>
         </div>
         <!-- adding sized box between the stats grid and the content grid -->
@@ -1201,7 +1246,7 @@
         <!-- Main Content Grid -->
         <div class="content-grid">
             <!-- Bio Section -->
-            <div class="card bio-section" id="bio">
+            <div class="card bio-section" id="bio" style="cursor:pointer;" onclick="openBioModal()">
                 <h2>📖 نبذة عن المرشح</h2>
                 <div class="bio-content">
                     {% if candidate.bio and candidate.bio|length > 10 %}
@@ -1231,7 +1276,7 @@
             </div>
 
             <!-- Program Section -->
-            <div class="card" id="program">
+            <div class="card" id="program" style="cursor:pointer;" onclick="openProgramModal()">
                 <h2>📋 البرنامج الانتخابي</h2>
                 <div class="program-content">
                     {% if candidate.program and candidate.program|length > 20 %}
@@ -1345,13 +1390,19 @@
                             <div class="gallery-media">
                                 {% if item.media_type == 'image' %}
                                     <img src="{{ item.file.url }}" alt="{{ item.title }}" loading="lazy">
-                                {% else %}
-                                    <video>
+                                {% elif item.media_type == 'video' %}
+                                    <video playsinline controls preload="metadata" muted style="background:#000; width:100%; height:100%; object-fit:cover;">
                                         <source src="{{ item.file.url }}" type="video/mp4">
                                     </video>
                                     <div class="video-overlay">
                                         <div class="play-button">▶️</div>
                                     </div>
+                                {% else %}
+                                    {% if item.is_youtube and item.youtube_embed_id %}
+                                        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/{{ item.youtube_embed_id }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                    {% else %}
+                                        <a href="{{ item.external_url }}" target="_blank" style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; background:#eef2ff; color:#4f46e5; text-decoration:none;">رابط خارجي</a>
+                                    {% endif %}
                                 {% endif %}
                                 {% if item.is_featured %}
                                     <div class="featured-badge">مميز</div>
@@ -1499,6 +1550,90 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Avatar Modal -->
+    <div id="avatarModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="modal-close" onclick="closeAvatarModal()">&times;</span>
+            <h2 style="margin-bottom:12px;">📷 صورة المرشح</h2>
+            <div id="avatarContent"></div>
+        </div>
+    </div>
+
+    <!-- Logo Modal -->
+    <div id="logoModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="modal-close" onclick="closeLogoModal()">&times;</span>
+            <h2 style="margin-bottom:12px;">🏷️ شعار الحملة</h2>
+            <div id="logoContent"></div>
+        </div>
+    </div>
+
+    <!-- Bio Modal -->
+    <div id="bioModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeBioModal()">&times;</span>
+            <h2>📖 نبذة عن المرشح</h2>
+            <div>
+                {% if candidate.bio and candidate.bio|length > 10 %}
+                    {{ candidate.bio|linebreaks }}
+                {% else %}
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">📝</div>
+                        <h3>نبذة عن المرشح</h3>
+                        <p>سيتم إضافة نبذة شاملة عن المرشح وأهدافه قريباً.</p>
+                        <div class="placeholder-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">--</span>
+                                <span class="stat-label">سنة من الخبرة</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">--</span>
+                                <span class="stat-label">مشروع تم تنفيذه</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">--</span>
+                                <span class="stat-label">مؤيد نشط</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Program Modal -->
+    <div id="programModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeProgramModal()">&times;</span>
+            <h2>📋 البرنامج الانتخابي</h2>
+            <div>
+                {% if candidate.program and candidate.program|length > 20 %}
+                    {{ candidate.program|linebreaks }}
+                {% else %}
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">🎯</div>
+                        <h3>البرنامج الانتخابي</h3>
+                        <p>سيتم إضافة البرنامج الانتخابي الكامل مع الأهداف والخطط قريباً.</p>
+                        <div class="placeholder-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">--</span>
+                                <span class="stat-label">هدف رئيسي</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">--</span>
+                                <span class="stat-label">مبادرة جديدة</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">--</span>
+                                <span class="stat-label">مشروع تنموي</span>
+                            </div>
+                        </div>
+                    </div>
                 {% endif %}
             </div>
         </div>
@@ -1784,7 +1919,7 @@
         // Init on load
         document.addEventListener('DOMContentLoaded', function() {
             // Ensure modals are direct children of <body> to avoid positioning/scroll issues
-            ['supportModal','pollModal','eventModal','speechModal','galleryModal','askModal'].forEach(id => {
+            ['supportModal','pollModal','eventModal','speechModal','galleryModal','askModal','bioModal','programModal','avatarModal','logoModal'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.parentNode !== document.body) {
                     document.body.appendChild(el);
@@ -2036,12 +2171,25 @@
                             <img src="${data.url}" alt="${data.title}" style="max-width:100%; max-height:70vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
                         </div>
                     ` + descHtml;
-                } else {
+                } else if (data.media_type === 'video') {
                     contentEl.innerHTML = `
                         <video controls style="width:100%; max-height:70vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15); background:#000;">
                             <source src="${data.url}" type="video/mp4">
                         </video>
                     ` + descHtml;
+                } else if (data.media_type === 'external') {
+                    if (data.is_youtube && data.youtube_id) {
+                        contentEl.innerHTML = `
+                            <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+                                <iframe src="https://www.youtube.com/embed/${data.youtube_id}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                            </div>
+                        ` + descHtml;
+                    } else {
+                        contentEl.innerHTML = `
+                            <p style="margin-bottom:10px;">هذا عنصر خارجي:</p>
+                            <p><a href="${data.url}" target="_blank" style="color:#667eea; text-decoration:underline;">فتح الرابط</a></p>
+                        ` + descHtml;
+                    }
                 }
             } else {
                 contentEl.innerHTML = '<p>لا توجد تفاصيل متاحة لهذا العنصر.</p>';
@@ -2116,7 +2264,9 @@
                     title: `{{ item.title|escapejs }}`,
                     description: `{{ item.description|default:''|escapejs }}`,
                     media_type: `{{ item.media_type|escapejs }}`,
-                    url: `{{ item.file.url|escapejs }}`
+                    url: `{% if item.media_type == 'external' %}{{ item.external_url|escapejs }}{% else %}{{ item.file.url|escapejs }}{% endif %}`,
+                    is_youtube: {% if item.is_youtube %}true{% else %}false{% endif %},
+                    youtube_id: `{{ item.youtube_embed_id|default:''|escapejs }}`
                 }{% if not forloop.last %},{% endif %}
                 {% endfor %}
             };
@@ -2125,7 +2275,7 @@
 
         // Close modals when clicking outside
         window.addEventListener('click', function(e) {
-            const modals = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal'];
+            const modals = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal'];
             for (const modalId of modals) {
                 const modal = document.getElementById(modalId);
                 if (modal && e.target === modal) {
@@ -2148,7 +2298,7 @@
 
         // ===== Global safeguards to prevent lock-up =====
         function isAnyModalOpen() {
-            const ids = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal'];
+            const ids = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal'];
             for (const id of ids) {
                 const el = document.getElementById(id);
                 if (el && el.style.display && el.style.display !== 'none') {
@@ -2161,7 +2311,7 @@
         // Press ESC to close any open modal and restore scroll
         window.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal'].forEach(id => {
+                ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el && el.style.display && el.style.display !== 'none') {
                         el.style.display = 'none';
@@ -2170,6 +2320,51 @@
                 document.body.style.overflow = '';
             }
         });
+        // Avatar Modal Functions
+        function openAvatarModal() {
+            const modal = document.getElementById('avatarModal');
+            const content = document.getElementById('avatarContent');
+            if (!modal || !content) return;
+            {% if candidate.profile_image %}
+                content.innerHTML = '<div style="display:flex; justify-content:center;"><img src="{{ candidate.profile_image.url }}" alt="{{ candidate.name }}" style="max-width:100%; max-height:70vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);"></div>';
+            {% else %}
+                content.innerHTML = '<div class="placeholder-content"><div class="placeholder-icon">🖼️</div><h3>لا توجد صورة متاحة</h3></div>';
+            {% endif %}
+            modal.style.display = 'flex';
+            modal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAvatarModal() {
+            const modal = document.getElementById('avatarModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Logo Modal Functions
+        function openLogoModal(e) {
+            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+            const modal = document.getElementById('logoModal');
+            const content = document.getElementById('logoContent');
+            if (!modal || !content) return;
+            {% if candidate.logo %}
+                content.innerHTML = '<div style="display:flex; justify-content:center;"><img src="{{ candidate.logo.url }}" alt="شعار {{ candidate.name }}" style="max-width:100%; max-height:60vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);"></div>';
+            {% else %}
+                content.innerHTML = '<div class="placeholder-content"><div class="placeholder-icon">🏷️</div><h3>لا يوجد شعار متاح</h3></div>';
+            {% endif %}
+            modal.style.display = 'flex';
+            modal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLogoModal() {
+            const modal = document.getElementById('logoModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
 
         // Periodic watchdog: if no modal is open but body is locked, unlock
         setInterval(function() {
@@ -2204,6 +2399,37 @@
                 setTimeout(ensureScrollUnlocked, 10);
             }
         }, true);
+
+        // Bio/Program Modal Functions
+        function openBioModal() {
+            const modal = document.getElementById('bioModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            modal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBioModal() {
+            const modal = document.getElementById('bioModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function openProgramModal() {
+            const modal = document.getElementById('programModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            modal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProgramModal() {
+            const modal = document.getElementById('programModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
 
         // Form submissions
         document.getElementById('supportForm').addEventListener('submit', function(e) {

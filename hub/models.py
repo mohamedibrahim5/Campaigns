@@ -224,6 +224,7 @@ class Gallery(models.Model):
     MEDIA_TYPES = [
         ('image', 'Image'),
         ('video', 'Video'),
+        ('external', 'External Link'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -231,7 +232,8 @@ class Gallery(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPES)
-    file = models.FileField(upload_to='candidates/gallery/')
+    file = models.FileField(upload_to='candidates/gallery/', blank=True, null=True)
+    external_url = models.URLField(blank=True, null=True)
     thumbnail = models.ImageField(upload_to='candidates/gallery/thumbnails/', blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_public = models.BooleanField(default=True)
@@ -255,6 +257,29 @@ class Gallery(models.Model):
     def thumbnail_url(self):
         if self.thumbnail:
             return self.thumbnail.url
+        return None
+
+    @property
+    def is_youtube(self):
+        if self.media_type != 'external' or not self.external_url:
+            return False
+        url = (self.external_url or '').lower()
+        return 'youtube.com/watch' in url or 'youtu.be/' in url
+
+    @property
+    def youtube_embed_id(self):
+        if not self.is_youtube:
+            return None
+        try:
+            from urllib.parse import urlparse, parse_qs
+            u = urlparse(self.external_url)
+            if 'youtu.be' in u.netloc:
+                return u.path.strip('/')
+            if 'youtube.com' in u.netloc:
+                q = parse_qs(u.query)
+                return (q.get('v') or [None])[0]
+        except Exception:
+            return None
         return None
 
 

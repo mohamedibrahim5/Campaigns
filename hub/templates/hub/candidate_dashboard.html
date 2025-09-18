@@ -1029,18 +1029,24 @@
                     
                     <div class="form-group">
                         <label for="gallery_media_type">نوع الوسائط</label>
-                        <select id="gallery_media_type" name="gallery_media_type">
+                        <select id="gallery_media_type" name="gallery_media_type" onchange="toggleGalleryInputs()">
                             <option value="image">صورة</option>
                             <option value="video">فيديو</option>
+                            <option value="external">رابط خارجي (يوتيوب/منشور)</option>
                         </select>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group" id="gallery_file_group">
                         <label>ملف الوسائط</label>
                         <div class="file-input">
-                            <input type="file" name="gallery_file" accept="image/*,video/*" required>
+                            <input type="file" id="gallery_file" name="gallery_file" accept="image/*,video/*">
                             اختر ملف صورة أو فيديو
                         </div>
+                    </div>
+                    
+                    <div class="form-group" id="gallery_url_group" style="display:none;">
+                        <label for="gallery_external_url">رابط خارجي (مثال: https://youtu.be/… أو https://…)</label>
+                        <input type="url" id="gallery_external_url" name="gallery_external_url" placeholder="الصق الرابط هنا">
                     </div>
                     
                     <div class="form-group">
@@ -1057,7 +1063,7 @@
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn btn-success">إضافة للمعرض</button>
+                    <button type="submit" class="btn btn-success" onclick="return validateGalleryForm()">إضافة للمعرض</button>
                 </form>
             </div>
 
@@ -1070,11 +1076,17 @@
                             <div style="text-align: center; margin-bottom: 10px;">
                                 {% if item.media_type == 'image' %}
                                     <img src="{{ item.file.url }}" alt="{{ item.title }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;">
-                                {% else %}
+                                {% elif item.media_type == 'video' %}
                                     <video controls style="width: 100%; height: 150px; border-radius: 8px;">
                                         <source src="{{ item.file.url }}" type="video/mp4">
                                         متصفحك لا يدعم تشغيل الفيديو.
                                     </video>
+                                {% else %}
+                                    {% if item.is_youtube and item.youtube_embed_id %}
+                                        <iframe width="100%" height="150" src="https://www.youtube.com/embed/{{ item.youtube_embed_id }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="border-radius:8px;"></iframe>
+                                    {% else %}
+                                        <a href="{{ item.external_url }}" target="_blank" style="display:inline-block; background:#eef2ff; color:#4f46e5; padding:10px 12px; border-radius:8px; text-decoration:none;">فتح الرابط الخارجي</a>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                             <h4 style="margin: 10px 0; color: #667eea;">{{ item.title }}</h4>
@@ -1082,9 +1094,7 @@
                                 <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">{{ item.description|truncatewords:15 }}</p>
                             {% endif %}
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background: {% if item.media_type == 'image' %}#28a745{% else %}#dc3545{% endif %}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">
-                                    {{ item.get_media_type_display }}
-                                </span>
+                                <span style="background: {% if item.media_type == 'image' %}#28a745{% elif item.media_type == 'video' %}#dc3545{% else %}#4f46e5{% endif %}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">{{ item.get_media_type_display }}</span>
                                 {% if item.is_featured %}
                                     <span style="background: #ffc107; color: #333; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">مميز</span>
                                 {% endif %}
@@ -1096,7 +1106,11 @@
                                     <input type="hidden" name="gallery_id" value="{{ item.id }}">
                                     <button type="submit" class="btn btn-danger" style="width: 100%; padding: 5px; font-size: 0.8rem;">حذف</button>
                                 </form>
-                                <a href="{{ item.file.url }}" target="_blank" class="btn btn-secondary" style="flex: 1; padding: 5px; font-size: 0.8rem; text-align: center;">عرض</a>
+                                {% if item.media_type == 'external' %}
+                                    <a href="{{ item.external_url }}" target="_blank" class="btn btn-secondary" style="flex: 1; padding: 5px; font-size: 0.8rem; text-align: center;">فتح الرابط</a>
+                                {% else %}
+                                    <a href="{{ item.file.url }}" target="_blank" class="btn btn-secondary" style="flex: 1; padding: 5px; font-size: 0.8rem; text-align: center;">عرض</a>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -1540,6 +1554,37 @@
             `);
             w.document.close(); w.focus(); w.print(); w.close();
         }
+        function toggleGalleryInputs() {
+            var type = document.getElementById('gallery_media_type').value;
+            var fileGroup = document.getElementById('gallery_file_group');
+            var urlGroup = document.getElementById('gallery_url_group');
+            var file = document.getElementById('gallery_file');
+            var url = document.getElementById('gallery_external_url');
+            if (type === 'external') {
+                fileGroup.style.display = 'none';
+                urlGroup.style.display = '';
+                if (file) file.required = false;
+                if (url) url.required = true;
+            } else {
+                fileGroup.style.display = '';
+                urlGroup.style.display = 'none';
+                if (file) file.required = true;
+                if (url) url.required = false;
+            }
+        }
+
+        function validateGalleryForm() {
+            var type = document.getElementById('gallery_media_type').value;
+            if (type === 'external') {
+                var url = document.getElementById('gallery_external_url').value.trim();
+                if (!url) { alert('يرجى إدخال الرابط الخارجي.'); return false; }
+            } else {
+                var file = document.getElementById('gallery_file');
+                if (!file || !file.files || !file.files.length) { alert('يرجى اختيار ملف الصورة/الفيديو.'); return false; }
+            }
+            return true;
+        }
+        document.addEventListener('DOMContentLoaded', toggleGalleryInputs);
     </script>
 </body>
 </html>

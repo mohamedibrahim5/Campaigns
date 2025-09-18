@@ -2099,18 +2099,39 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
             media_type = request.POST.get('gallery_media_type', 'image')
             is_featured = request.POST.get('gallery_is_featured') == 'on'
             is_public = request.POST.get('gallery_is_public') == 'on'
-            
-            if title and 'gallery_file' in request.FILES:
-                gallery_item = Gallery.objects.create(
-                    candidate=candidate,
-                    title=title,
-                    description=description,
-                    media_type=media_type,
-                    file=request.FILES['gallery_file'],
-                    is_featured=is_featured,
-                    is_public=is_public
-                )
-                messages.success(request, f'تم إضافة {gallery_item.title} إلى المعرض بنجاح!')
+            external_url = (request.POST.get('gallery_external_url') or '').strip()
+
+            if not title:
+                messages.error(request, 'يرجى إدخال عنوان للعنصر.')
+            else:
+                if media_type == 'external':
+                    if not external_url:
+                        messages.error(request, 'يرجى إدخال الرابط الخارجي للعنصر.')
+                    else:
+                        Gallery.objects.create(
+                            candidate=candidate,
+                            title=title,
+                            description=description,
+                            media_type='external',
+                            external_url=external_url,
+                            is_featured=is_featured,
+                            is_public=is_public
+                        )
+                        messages.success(request, 'تم إضافة الرابط الخارجي إلى المعرض بنجاح!')
+                else:
+                    if 'gallery_file' not in request.FILES:
+                        messages.error(request, 'يرجى اختيار ملف الصورة/الفيديو.')
+                    else:
+                        Gallery.objects.create(
+                            candidate=candidate,
+                            title=title,
+                            description=description,
+                            media_type=media_type,
+                            file=request.FILES['gallery_file'],
+                            is_featured=is_featured,
+                            is_public=is_public
+                        )
+                        messages.success(request, f'تم إضافة {title} إلى المعرض بنجاح!')
         
         elif action == 'delete_gallery':
             # Handle gallery item deletion
