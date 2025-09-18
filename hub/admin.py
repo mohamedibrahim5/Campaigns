@@ -10,7 +10,7 @@ from .models import (
     Bot, BotUser, Campaign, CampaignMessage, CampaignAssignment, SendLog, WebhookEvent, MessageLog,
     # Election 360 models
     Candidate, CandidateUser, Event, EventAttendance, Speech, Poll, PollResponse, Supporter, 
-    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics, Gallery
+    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics, Gallery, Testimonial
 )
 
 
@@ -231,6 +231,14 @@ class GalleryAdmin(admin.ModelAdmin):
     list_display = ['candidate', 'title', 'media_type', 'is_featured', 'is_public', 'created_at']
     list_filter = ['media_type', 'is_featured', 'is_public', 'created_at']
     search_fields = ['title', 'description']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+
+
+@admin.register(Testimonial)
+class TestimonialAdmin(admin.ModelAdmin):
+    list_display = ['name', 'candidate', 'is_public', 'display_order', 'created_at']
+    list_filter = ['is_public', 'candidate']
+    search_fields = ['name', 'role', 'quote']
     readonly_fields = ['id', 'created_at', 'updated_at']
 
 

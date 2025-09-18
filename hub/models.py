@@ -283,6 +283,24 @@ class Gallery(models.Model):
         return None
 
 
+class Testimonial(models.Model):
+    """Supporters' testimonials to show social proof on landing page"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='testimonials')
+    name = models.CharField(max_length=200)
+    role = models.CharField(max_length=200, blank=True, null=True)
+    quote = models.TextField()
+    is_public = models.BooleanField(default=True)
+    display_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-created_at']
+
+    def __str__(self):
+        return f"{self.name} – {self.candidate.name}"
+
 class Event(models.Model):
     """Events and announcements for candidates"""
     EVENT_TYPES = [

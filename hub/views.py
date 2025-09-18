@@ -1646,6 +1646,25 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
         else:
             return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
     
+    # Handle adding testimonial (public)
+    if request.method == 'POST' and request.POST.get('action') == 'add_testimonial':
+        from .models import Testimonial
+        name = (request.POST.get('t_name') or '').strip()
+        role = (request.POST.get('t_role') or '').strip()
+        quote = (request.POST.get('t_quote') or '').strip()
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        if not name or not quote:
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': 'يرجى إدخال الاسم والرسالة'})
+            messages.error(request, 'يرجى إدخال الاسم والرسالة')
+            return redirect(request.path)
+        # Save as pending (not public) until approved in dashboard/admin
+        Testimonial.objects.create(candidate=candidate, name=name, role=role or None, quote=quote, is_public=False)
+        if is_ajax:
+            return JsonResponse({'success': True, 'message': 'تم استلام رأيك بانتظار المراجعة. شكرًا لدعمك!'})
+        messages.success(request, 'تم استلام رأيك بانتظار المراجعة. شكرًا لدعمك!')
+        return redirect(request.path)
+
     # Handle poll voting
     if request.method == 'POST' and request.POST.get('action') == 'vote':
         poll_id = request.POST.get('poll_id')
@@ -1734,6 +1753,9 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
     
     # Get gallery items
     gallery_items = Gallery.objects.filter(candidate=candidate, is_public=True).order_by('-is_featured', '-created_at')[:12]
+    # Get testimonials
+    from .models import Testimonial
+    testimonials = Testimonial.objects.filter(candidate=candidate, is_public=True).order_by('display_order', '-created_at')[:6]
     
     context = {
         'candidate': candidate,
@@ -1743,6 +1765,7 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
         'polls': polls,
         'candidate_bot': candidate_bot,
         'gallery_items': gallery_items,
+        'testimonials': testimonials,
     }
     return render(request, 'hub/candidate_landing.html', context)
 
@@ -1761,6 +1784,17 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
             return HttpResponse("Candidate not found", status=404)
     except Exception:
         return HttpResponse("Candidate not found", status=404)
+
+    # Handle adding testimonial via public URL
+    if request.method == 'POST' and request.POST.get('action') == 'add_testimonial':
+        from .models import Testimonial
+        name = (request.POST.get('t_name') or '').strip()
+        role = (request.POST.get('t_role') or '').strip()
+        quote = (request.POST.get('t_quote') or '').strip()
+        if not name or not quote:
+            return JsonResponse({'success': False, 'message': 'يرجى إدخال الاسم والرسالة'})
+        Testimonial.objects.create(candidate=candidate, name=name, role=role or None, quote=quote, is_public=False)
+        return JsonResponse({'success': True, 'message': 'تم استلام رأيك بانتظار المراجعة. شكرًا لدعمك!'})
 
     # Reuse landing logic data
     events = Event.objects.filter(candidate=candidate, is_public=True).order_by('-start_datetime')[:5]
@@ -1783,6 +1817,9 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
 
     candidate_bot = candidate.bot
     gallery_items = Gallery.objects.filter(candidate=candidate, is_public=True).order_by('-is_featured', '-created_at')[:12]
+    # Public testimonials
+    from .models import Testimonial
+    testimonials = Testimonial.objects.filter(candidate=candidate, is_public=True).order_by('display_order', '-created_at')[:6]
     context = {
         'candidate': candidate,
         'events': events,
@@ -1791,6 +1828,7 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
         'polls': polls,
         'candidate_bot': candidate_bot,
         'gallery_items': gallery_items,
+        'testimonials': testimonials,
     }
     return render(request, 'hub/candidate_landing.html', context)
 
@@ -2143,6 +2181,53 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
             except Gallery.DoesNotExist:
                 pass
         
+        elif action == 'add_testimonial':
+            # Add supporter testimonial
+            from .models import Testimonial
+            name = (request.POST.get('t_name') or '').strip()
+            role = (request.POST.get('t_role') or '').strip()
+            quote = (request.POST.get('t_quote') or '').strip()
+            is_public = request.POST.get('t_is_public') == 'on'
+            if name and quote:
+                Testimonial.objects.create(candidate=candidate, name=name, role=role or None, quote=quote, is_public=is_public)
+                messages.success(request, 'تم إضافة الرأي بنجاح!')
+
+        elif action == 'delete_testimonial':
+            from .models import Testimonial
+            tid = request.POST.get('testimonial_id')
+            try:
+                t = Testimonial.objects.get(id=tid, candidate=candidate)
+                t.delete()
+                messages.success(request, 'تم حذف الرأي بنجاح!')
+            except Testimonial.DoesNotExist:
+                pass
+
+        elif action == 'toggle_testimonial_visibility':
+            from .models import Testimonial
+            tid = request.POST.get('testimonial_id')
+            try:
+                t = Testimonial.objects.get(id=tid, candidate=candidate)
+                t.is_public = not t.is_public
+                t.save(update_fields=['is_public'])
+                messages.success(request, 'تم تحديث حالة العرض!')
+            except Testimonial.DoesNotExist:
+                pass
+
+        elif action == 'update_testimonial_order':
+            from .models import Testimonial
+            tid = request.POST.get('testimonial_id')
+            try:
+                new_order = int(request.POST.get('display_order') or 0)
+            except ValueError:
+                new_order = 0
+            try:
+                t = Testimonial.objects.get(id=tid, candidate=candidate)
+                t.display_order = new_order
+                t.save(update_fields=['display_order'])
+                messages.success(request, 'تم تحديث ترتيب العرض!')
+            except Testimonial.DoesNotExist:
+                pass
+
         elif action == 'answer_question':
             # Save answer to a question from the Questions modal
             q_id = request.POST.get('question_id')
@@ -2165,6 +2250,9 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
     supporters_count = supporters.count()
     gallery_items = Gallery.objects.filter(candidate=candidate).order_by('-is_featured', '-created_at')
     questions = DailyQuestion.objects.filter(candidate=candidate).order_by('-asked_at')
+    # Testimonials for dashboard
+    from .models import Testimonial
+    testimonials = Testimonial.objects.filter(candidate=candidate).order_by('display_order', '-created_at')
     
     context = {
         'candidate': candidate,
@@ -2175,5 +2263,6 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
         'supporters_count': supporters_count,
         'gallery_items': gallery_items,
         'questions': questions,
+        'testimonials': testimonials,
     }
     return render(request, 'hub/candidate_dashboard.html', context)

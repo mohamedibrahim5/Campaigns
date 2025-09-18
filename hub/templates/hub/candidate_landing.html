@@ -1197,14 +1197,14 @@
 
                 <div class="quick-actions" style="margin-top:8px;">
                     <a href="#" onclick="openSupportModal(); return false;" class="action-btn support" style="display:inline-flex; align-items:center; gap:8px;">
-                        <span>💪</span><span>ادعم المرشح الآن</span>
+                        <span>💪</span><span>ابدأ الدعم الآن</span>
                     </a>
                     <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background: linear-gradient(45deg, #20c997, #28a745); display:inline-flex; align-items:center; gap:8px;">
-                        <span>❓</span><span>اسأل المرشح</span>
+                        <span>❓</span><span>اسأل سؤالاً سريعاً</span>
                     </a>
                     {% if candidate_bot %}
                     <a href="{{ candidate_bot.bot_link|default:'#' }}" class="action-btn telegram" target="_blank" style="display:inline-flex; align-items:center; gap:8px;">
-                        <span>🤖</span><span>انضم للبوت</span>
+                        <span>🤖</span><span>تابع التحديثات عبر البوت</span>
                     </a>
                     {% endif %}
                 </div>
@@ -1243,8 +1243,88 @@
         <!-- adding sized box between the stats grid and the content grid -->
         <div style="height: 16px;"></div>
 
+        <!-- Benefits / Features Section -->
+        <div class="card" id="features">
+            <h2>✨ لماذا الانضمام لحملة {{ candidate.name }}؟</h2>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:16px;">
+                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
+                    <div style="font-size:1.6rem; margin-bottom:8px;">🚀</div>
+                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">تأثير ملموس</div>
+                    <div style="color:#64748b; line-height:1.6;">شارك في مبادرات تغير واقع المدينة عبر العمل الميداني والمنصات الرقمية.</div>
+                </div>
+                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
+                    <div style="font-size:1.6rem; margin-bottom:8px;">🤝</div>
+                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">مجتمع داعم</div>
+                    <div style="color:#64748b; line-height:1.6;">تواصل مع آلاف المؤيدين وتابع آخر الأخبار بسهولة.</div>
+                </div>
+                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
+                    <div style="font-size:1.6rem; margin-bottom:8px;">📣</div>
+                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">صوتك مسموع</div>
+                    <div style="color:#64748b; line-height:1.6;">أرسل سؤالك واقتراحاتك مباشرة وتابع ردود المرشح.</div>
+                </div>
+                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
+                    <div style="font-size:1.6rem; margin-bottom:8px;">🔒</div>
+                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">خصوصية مضمونة</div>
+                    <div style="color:#64748b; line-height:1.6;">بياناتك محمية ونستخدمها فقط لأغراض الحملة.</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px;">
+                <!-- <a href="#" onclick="openSupportModal(); return false;" class="action-btn support"><span>💪</span><span>انضم الآن</span></a>
+                <a href="#polls" class="action-btn" style="background:linear-gradient(45deg,#6366f1,#8b5cf6);"><span>📊</span><span>شارك برأيك</span></a> -->
+            </div>
+        </div>
+
         <!-- Main Content Grid -->
         <div class="content-grid">
+            <!-- Testimonials Section -->
+            <div class="card" id="testimonials">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                    <h2 style="margin-bottom:0;">💬 ماذا يقول الداعمون</h2>
+                    <button type="button" onclick="openTestimonialModal()" class="action-btn" style="background:linear-gradient(45deg,#6366f1,#8b5cf6); padding:10px 14px; border-radius:20px;">
+                        ✍️ أضف رأيك
+                    </button>
+                </div>
+                <script>
+                    // Fallback in case main script fails earlier
+                    if (!window.openTestimonialModal) {
+                        window.openTestimonialModal = function() {
+                            var modal = document.getElementById('testimonialModal');
+                            if (!modal) return false;
+                            modal.style.display = 'flex';
+                            modal.scrollTop = 0;
+                            document.body.style.overflow = 'hidden';
+                            return false;
+                        };
+                    }
+                </script>
+                {% if testimonials %}
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+                    {% for t in testimonials %}
+                    <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
+                        <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">{{ t.name }}</div>
+                        <div style="color:#64748b; line-height:1.7;">{{ t.quote }}</div>
+                        {% if t.role %}
+                        <div style="margin-top:10px; color:#0ea5e9; font-size:0.85rem;">{{ t.role }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">💬</div>
+                    <h3>قريبًا آراء الداعمين</h3>
+                    <p>أضف آراء داعميك لزيادة الثقة والتحويل.</p>
+                    <div class="placeholder-stats">
+                        <!-- <div class="stat-item"><span class="stat-number">98%</span><span class="stat-label">رضا المشاركين</span></div>
+                        <div class="stat-item"><span class="stat-number">+300</span><span class="stat-label">تعليق إيجابي</span></div> -->
+                    </div>
+                </div>
+                {% endif %}
+                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px;">
+                    <!-- <a href="#" onclick="openSupportModal(); return false;" class="action-btn support"><span>💪</span><span>ادعم المرشح</span></a>
+                    <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background:linear-gradient(45deg,#20c997,#28a745);"><span>❓</span><span>اسأل سؤالاً</span></a> -->
+                </div>
+            </div>
             <!-- Bio Section -->
             <div class="card bio-section" id="bio" style="cursor:pointer;" onclick="openBioModal()">
                 <h2>📖 نبذة عن المرشح</h2>
@@ -1272,6 +1352,25 @@
                             </div>
                         </div>
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="card" id="faq">
+                <h2>❓ الأسئلة الشائعة</h2>
+                <div style="display:grid; gap:10px;">
+                    <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
+                        <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">كيف أسجل دعمي؟</button>
+                        <div style="display:none; padding:14px 16px; color:#64748b;">اضغط على زر "ادعم المرشح" واملأ البيانات المطلوبة لإضافة دعمك فورًا.</div>
+                    </div>
+                    <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
+                        <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">هل بياناتي آمنة؟</button>
+                        <div style="display:none; padding:14px 16px; color:#64748b;">نعم، نلتزم بحماية بياناتك ولا نشاركها إلا لأغراض الحملة.</div>
+                    </div>
+                    <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
+                        <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">كيف أتلقى التحديثات؟</button>
+                        <div style="display:none; padding:14px 16px; color:#64748b;">انضم إلى قناة البوت أو فعّل الإشعارات عبر الموقع لتصلك آخر الأخبار.</div>
+                    </div>
                 </div>
             </div>
 
@@ -1555,6 +1654,17 @@
         </div>
     </div>
 
+    <!-- Mobile Sticky CTA -->
+    <div id="mobileStickyCta" style="position:fixed; bottom:12px; left:12px; right:12px; display:none; z-index:2200;">
+        <div style="display:flex; gap:8px; background:rgba(255,255,255,0.95); border:1px solid rgba(226,232,240,0.9); padding:8px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+            <a href="#" onclick="openSupportModal(); return false;" class="action-btn support" style="flex:1; display:flex; justify-content:center;">💪 دعم</a>
+            <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="flex:1; background:linear-gradient(45deg,#20c997,#28a745); display:flex; justify-content:center;">❓ سؤال</a>
+            {% if candidate_bot %}
+            <a href="{{ candidate_bot.bot_link|default:'#' }}" target="_blank" class="action-btn telegram" style="flex:1; display:flex; justify-content:center;">🤖 البوت</a>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Avatar Modal -->
     <div id="avatarModal" class="modal">
         <div class="modal-content" style="max-width: 900px;">
@@ -1563,6 +1673,34 @@
             <div id="avatarContent"></div>
         </div>
     </div>
+
+    <!-- Testimonial Modal -->
+    <div id="testimonialModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeTestimonialModal()">&times;</span>
+            <h2>✍️ إضافة رأي داعم</h2>
+            <form method="post" id="testimonialForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_testimonial">
+                <div class="form-group">
+                    <label for="t_name">الاسم الكامل *</label>
+                    <input type="text" id="t_name" name="t_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="t_role">الصفة (اختياري)</label>
+                    <input type="text" id="t_role" name="t_role" placeholder="مثال: متطوع/مؤيد/عضو بالحملة">
+                </div>
+                <div class="form-group">
+                    <label for="t_quote">رسالتك *</label>
+                    <textarea id="t_quote" name="t_quote" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">إرسال الرأي</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" style="position:fixed; left:50%; transform:translateX(-50%); bottom:20px; z-index:4000; display:none; background:#16a34a; color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.15); font-weight:600; min-width: 220px; text-align:center;"></div>
 
     <!-- Logo Modal -->
     <div id="logoModal" class="modal">
@@ -1919,7 +2057,7 @@
         // Init on load
         document.addEventListener('DOMContentLoaded', function() {
             // Ensure modals are direct children of <body> to avoid positioning/scroll issues
-            ['supportModal','pollModal','eventModal','speechModal','galleryModal','askModal','bioModal','programModal','avatarModal','logoModal'].forEach(id => {
+            ['supportModal','pollModal','eventModal','speechModal','galleryModal','askModal','bioModal','programModal','avatarModal','logoModal','testimonialModal'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.parentNode !== document.body) {
                     document.body.appendChild(el);
@@ -1966,6 +2104,14 @@
                     }
                 });
             });
+
+            // Show sticky CTA on small screens after slight delay
+            setTimeout(function(){
+                if (window.innerWidth <= 768) {
+                    const bar = document.getElementById('mobileStickyCta');
+                    if (bar) bar.style.display = 'block';
+                }
+            }, 600);
         });
 
         // Support Modal Functions
@@ -2275,7 +2421,7 @@
 
         // Close modals when clicking outside
         window.addEventListener('click', function(e) {
-            const modals = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal'];
+            const modals = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal', 'testimonialModal'];
             for (const modalId of modals) {
                 const modal = document.getElementById(modalId);
                 if (modal && e.target === modal) {
@@ -2298,7 +2444,7 @@
 
         // ===== Global safeguards to prevent lock-up =====
         function isAnyModalOpen() {
-            const ids = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal'];
+            const ids = ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal', 'testimonialModal'];
             for (const id of ids) {
                 const el = document.getElementById(id);
                 if (el && el.style.display && el.style.display !== 'none') {
@@ -2311,12 +2457,59 @@
         // Press ESC to close any open modal and restore scroll
         window.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal'].forEach(id => {
+                ['supportModal', 'pollModal', 'eventModal', 'speechModal', 'galleryModal', 'askModal', 'bioModal', 'programModal', 'avatarModal', 'logoModal', 'testimonialModal'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el && el.style.display && el.style.display !== 'none') {
                         el.style.display = 'none';
                     }
                 });
+        // Testimonial Modal Functions
+        function openTestimonialModal() {
+            const modal = document.getElementById('testimonialModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            modal.scrollTop = 0;
+            // Bring modal into view
+            modal.focus({preventScroll:true});
+            try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(e){}
+            document.body.style.overflow = 'hidden';
+        }
+        function closeTestimonialModal() {
+            const modal = document.getElementById('testimonialModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        // Expose globally for inline onclick
+        window.openTestimonialModal = openTestimonialModal;
+        window.closeTestimonialModal = closeTestimonialModal;
+
+        // Submit testimonial via AJAX
+        const testimonialForm = document.getElementById('testimonialForm');
+        if (testimonialForm) {
+            testimonialForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const original = submitBtn.textContent;
+                submitBtn.textContent = 'جاري الإرسال...';
+                submitBtn.disabled = true;
+                submitBtn.classList.add('loading');
+                const formData = new FormData(this);
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': getCSRFToken(), 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) { this.reset(); closeTestimonialModal(); }
+                })
+                .catch(() => {})
+                .finally(() => { submitBtn.textContent = original; submitBtn.disabled = false; submitBtn.classList.remove('loading'); });
+            });
+        }
+
+        function showToast(){}
                 document.body.style.overflow = '';
             }
         });
@@ -2401,6 +2594,12 @@
         }, true);
 
         // Bio/Program Modal Functions
+        function toggleFaq(btn) {
+            const panel = btn.nextElementSibling;
+            if (!panel) return;
+            const isOpen = panel.style.display !== 'none' && panel.style.display !== '' ? true : false;
+            panel.style.display = isOpen ? 'none' : 'block';
+        }
         function openBioModal() {
             const modal = document.getElementById('bioModal');
             if (!modal) return;
