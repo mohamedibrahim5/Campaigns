@@ -1107,7 +1107,7 @@
         }
     </style>
     <!-- Drawer Menu -->
-    <div id="drawer" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100vh; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.1); z-index: 2000; transition: right 0.3s ease; padding: 20px;">
+    <div id="drawer" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100vh; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.1); z-index: 3001; transition: right 0.3s ease; padding: 20px;">
         <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
             <strong style="color:#667eea;">القائمة</strong>
             <button onclick="toggleDrawer(false)" style="background:none;border:none;font-size:1.6rem;cursor:pointer">×</button>
@@ -1119,6 +1119,8 @@
         <a href="#gallery" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">🖼️ المعرض</a>
         <a href="#polls" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">📊 الاستطلاعات</a>
         <a href="#contact" class="navbar-item" onclick="toggleDrawer(false)" style="display:block;">📞 التواصل</a>
+        <hr style="margin:14px 0; border:none; border-top:1px solid #eee;">
+        <a href="/hub/candidate/{{ candidate.id }}/ask/" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; background: linear-gradient(45deg, #20c997, #28a745);">❓ اسأل المرشح</a>
     </div>
     <button id="drawerToggler" onclick="toggleDrawer(true)" style="position: fixed; top: 14px; left: 14px; z-index: 2100; background: linear-gradient(45deg, #667eea, #764ba2); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
         ☰ القائمة
@@ -1585,6 +1587,8 @@
             const drawer = document.getElementById('drawer');
             if (!drawer) return;
             drawer.style.right = open ? '0' : '-280px';
+            // Prevent background scroll when drawer is open on small screens
+            document.body.style.overflow = open ? 'hidden' : '';
         }
 
         // Init on load
@@ -1844,6 +1848,17 @@
                 if (modal && e.target === modal) {
                     modal.style.display = 'none';
                     document.body.style.overflow = '';
+                }
+            }
+            // Close drawer when clicking outside it and not on the toggler
+            const drawer = document.getElementById('drawer');
+            const toggler = document.getElementById('drawerToggler');
+            if (drawer) {
+                const isOpen = drawer.style.right === '0px' || drawer.style.right === '0';
+                const clickInsideDrawer = drawer.contains(e.target);
+                const clickedToggler = toggler && toggler.contains(e.target);
+                if (isOpen && !clickInsideDrawer && !clickedToggler) {
+                    toggleDrawer(false);
                 }
             }
         }, true);
