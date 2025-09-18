@@ -1747,6 +1747,54 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
     return render(request, 'hub/candidate_landing.html', context)
 
 
+def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> HttpResponse:
+    """Public friendly URL: /<candidate_name> → candidate landing.
+    Supports URL-encoded Arabic names. Matches active candidates by exact name.
+    """
+    try:
+        # Prefer matching by public_url_name if set, else fallback to exact name
+        normalized = (candidate_name or '').replace('+', ' ').strip()
+        candidate = Candidate.objects.filter(is_active=True, public_url_name=normalized).first()
+        if not candidate:
+            candidate = Candidate.objects.filter(is_active=True, name=normalized).first()
+        if not candidate:
+            return HttpResponse("Candidate not found", status=404)
+    except Exception:
+        return HttpResponse("Candidate not found", status=404)
+
+    # Reuse landing logic data
+    events = Event.objects.filter(candidate=candidate, is_public=True).order_by('-start_datetime')[:5]
+    supporters_count = Supporter.objects.filter(candidate=candidate).count()
+    speeches = Speech.objects.filter(candidate=candidate).order_by('-created_at')[:3]
+    polls = Poll.objects.filter(candidate=candidate).order_by('-created_at')[:5]
+    for poll in polls:
+        all_responses = PollResponse.objects.filter(poll=poll)
+        option_votes_list = []
+        options_with_counts = []
+        for i, option in enumerate(poll.options):
+            vote_count = 0
+            for response in all_responses:
+                if i in response.selected_options:
+                    vote_count += 1
+            option_votes_list.append(vote_count)
+            options_with_counts.append({'index': i, 'text': option, 'count': vote_count})
+        poll.option_votes_list = option_votes_list
+        poll.options_with_counts = options_with_counts
+
+    candidate_bot = candidate.bot
+    gallery_items = Gallery.objects.filter(candidate=candidate, is_public=True).order_by('-is_featured', '-created_at')[:12]
+    context = {
+        'candidate': candidate,
+        'events': events,
+        'supporters_count': supporters_count,
+        'speeches': speeches,
+        'polls': polls,
+        'candidate_bot': candidate_bot,
+        'gallery_items': gallery_items,
+    }
+    return render(request, 'hub/candidate_landing.html', context)
+
+
 @csrf_exempt
 def candidate_support(request: HttpRequest, candidate_id: str) -> HttpResponse:
     """Standalone support page to avoid modal issues."""
@@ -1886,7 +1934,7 @@ def candidate_login(request: HttpRequest, candidate_id: str) -> HttpResponse:
 def candidate_dashboard_me(request: HttpRequest) -> HttpResponse:
     """Dashboard without UUID in URL - resolves candidate from user profile."""
     if not hasattr(request.user, 'candidate_profile'):
-        return redirect('/accounts/login/?next=/hub/candidate/dashboard/')
+        return redirect('/accounts/login/?next=/login/')
     return redirect('candidate_dashboard', candidate_id=request.user.candidate_profile.candidate.id)
 
 

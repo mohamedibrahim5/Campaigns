@@ -165,6 +165,8 @@ class Candidate(models.Model):
     """Candidate profile with CV, program, and media"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
+    # Public-friendly display name used in pretty URLs (can include Arabic and spaces)
+    public_url_name = models.CharField(max_length=300, blank=True, null=True, unique=True)
     position = models.CharField(max_length=200)  # e.g., "Mayor of Cairo", "President"
     party = models.CharField(max_length=200, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)  # CV content

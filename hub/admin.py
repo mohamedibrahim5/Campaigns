@@ -101,13 +101,13 @@ class MessageLogAdmin(admin.ModelAdmin):
 
 @admin.register(Candidate)
 class CandidateAdmin(admin.ModelAdmin):
-    list_display = ['name', 'position', 'party', 'is_active', 'created_at']
+    list_display = ['name', 'public_url_name', 'position', 'party', 'is_active', 'created_at']
     list_filter = ['is_active', 'party', 'created_at']
-    search_fields = ['name', 'position', 'party']
+    search_fields = ['name', 'public_url_name', 'position', 'party']
     readonly_fields = ['id', 'created_at', 'updated_at']
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'position', 'party', 'bio', 'program')
+            'fields': ('name', 'public_url_name', 'position', 'party', 'bio', 'program')
         }),
         ('Contact & Media', {
             'fields': ('profile_image', 'logo', 'website', 'email', 'phone', 'social_media', 'bot')

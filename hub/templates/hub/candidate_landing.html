@@ -1120,7 +1120,11 @@
         <a href="#polls" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px;">📊 الاستطلاعات</a>
         <a href="#contact" class="navbar-item" onclick="toggleDrawer(false)" style="display:block;">📞 التواصل</a>
         <hr style="margin:14px 0; border:none; border-top:1px solid #eee;">
-        <a href="/hub/candidate/{{ candidate.id }}/ask/" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; background: linear-gradient(45deg, #20c997, #28a745);">❓ اسأل المرشح</a>
+        <a href="/hub/candidate/{{ candidate.id }}/support/" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px; background: linear-gradient(45deg, #28a745, #20c997);">💪 دعم المرشح</a>
+        <a href="/hub/candidate/{{ candidate.id }}/ask/" class="navbar-item" onclick="toggleDrawer(false)" style="display:block; margin-bottom:10px; background: linear-gradient(45deg, #20c997, #28a745);">❓ اسأل المرشح</a>
+        {% if candidate_bot %}
+        <a href="{{ candidate_bot.bot_link|default:'#' }}" class="navbar-item" onclick="toggleDrawer(false)" target="_blank" style="display:block; background: linear-gradient(45deg, #0088cc, #00a8ff);">🤖 انضم للبوت</a>
+        {% endif %}
     </div>
     <button id="drawerToggler" onclick="toggleDrawer(true)" style="position: fixed; top: 14px; left: 14px; z-index: 2100; background: linear-gradient(45deg, #667eea, #764ba2); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:8px;">
         ☰ القائمة
