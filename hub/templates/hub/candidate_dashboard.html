@@ -522,6 +522,14 @@
             <a href="/hub/candidate/{{ candidate.id }}/" target="_blank" class="preview-link">عرض الصفحة العامة</a>
         </div>
 
+        {% if candidate.bot %}
+        <div class="preview-section">
+            <h3>صفحة الهبوط للبوت</h3>
+            <p>يمكنك إدارة الهبوط الخاص بالبوت المرتبط بحملتك:</p>
+            <a href="/hub/landing/{{ candidate.bot.id }}/" target="_blank" class="preview-link">فتح صفحة الهبوط للبوت (ID: {{ candidate.bot.id }})</a>
+        </div>
+        {% endif %}
+
         <!-- Tabs Navigation -->
         <div class="tabs">
             <button class="tab active" onclick="showTab('profile')">الملف الشخصي</button>
@@ -1165,7 +1173,7 @@
                         <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
                         <h3 style="color: #667eea; margin-bottom: 0.5rem;">لا يوجد مؤيدون حالياً</h3>
                         <p>سيظهر المؤيدون هنا عند قيام الأشخاص بدعمك من الصفحة العامة</p>
-                        <a href="/hub/candidate/{{ candidate.id }}/" target="_blank" class="btn" style="margin-top: 1rem;">عرض الصفحة العامة</a>
+                        <!-- <a href="/hub/candidate/{{ candidate.id }}/" target="_blank" class="btn" style="margin-top: 1rem;">عرض الصفحة العامة</a> -->
                     </div>
                 {% endif %}
             </div>

@@ -776,9 +776,9 @@
 
         /* Modals */
         .modal {
-            display: none;
+            display: none; /* will be set to flex in JS when opened */
             position: fixed;
-            z-index: 2000;
+            z-index: 3000;
             left: 0;
             top: 0;
             width: 100vw;
@@ -786,6 +786,8 @@
             background-color: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(3px);
             padding: 16px;
+            align-items: center;
+            justify-content: center;
         }
 
         .modal-content {
@@ -794,11 +796,12 @@
             padding: 20px;
             border-radius: 16px;
             width: 100%;
-            max-width: 460px;
+            max-width: 560px;
             max-height: calc(100vh - 32px);
             overflow-y: auto;
             position: relative;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            animation: modalSlideIn 0.2s ease-out;
         }
 
         @keyframes modalSlideIn {
@@ -1586,6 +1589,17 @@
 
         // Init on load
         document.addEventListener('DOMContentLoaded', function() {
+            // Ensure modals are direct children of <body> to avoid positioning/scroll issues
+            ['supportModal','pollModal','eventModal','speechModal'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.parentNode !== document.body) {
+                    document.body.appendChild(el);
+                }
+            });
+
+            // Ensure body scroll is unlocked on load
+            document.body.style.overflow = '';
+
             // Enforce numeric-only and max length 11 for phone inputs
             const phoneInputs = ['user_phone', 'voter_phone']
                 .map(id => document.getElementById(id))
@@ -1663,11 +1677,14 @@
                 });
             }
             
-            modal.style.display = 'block';
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
 
         function closePollModal() {
-            document.getElementById('pollModal').style.display = 'none';
+            const modal = document.getElementById('pollModal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = '';
         }
 
         // Event Modal Functions
@@ -1722,11 +1739,14 @@
                 document.getElementById('eventContent').innerHTML = '<p>تفاصيل الفعالية غير متاحة.</p>';
             }
             
-            document.getElementById('eventModal').style.display = 'block';
+            document.getElementById('eventModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
 
         function closeEventModal() {
-            document.getElementById('eventModal').style.display = 'none';
+            const modal = document.getElementById('eventModal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = '';
         }
 
         // Speech Modal Functions
@@ -1755,11 +1775,14 @@
                 document.getElementById('speechContent').innerHTML = '<p>تفاصيل الخطاب غير متاحة.</p>';
             }
             
-            document.getElementById('speechModal').style.display = 'block';
+            document.getElementById('speechModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
 
         function closeSpeechModal() {
-            document.getElementById('speechModal').style.display = 'none';
+            const modal = document.getElementById('speechModal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = '';
         }
 
         // Get poll data
@@ -1814,15 +1837,75 @@
         }
 
         // Close modals when clicking outside
-        window.onclick = function(event) {
+        window.addEventListener('click', function(e) {
             const modals = ['supportModal', 'pollModal', 'eventModal', 'speechModal'];
-            modals.forEach(modalId => {
+            for (const modalId of modals) {
                 const modal = document.getElementById(modalId);
-                if (event.target === modal) {
+                if (modal && e.target === modal) {
                     modal.style.display = 'none';
+                    document.body.style.overflow = '';
                 }
-            });
+            }
+        }, true);
+
+        // ===== Global safeguards to prevent lock-up =====
+        function isAnyModalOpen() {
+            const ids = ['supportModal', 'pollModal', 'eventModal', 'speechModal'];
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (el && el.style.display && el.style.display !== 'none') {
+                    return true;
+                }
+            }
+            return false;
         }
+
+        // Press ESC to close any open modal and restore scroll
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                ['supportModal', 'pollModal', 'eventModal', 'speechModal'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && el.style.display && el.style.display !== 'none') {
+                        el.style.display = 'none';
+                    }
+                });
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Periodic watchdog: if no modal is open but body is locked, unlock
+        setInterval(function() {
+            if (!isAnyModalOpen() && document.body.style.overflow === 'hidden') {
+                document.body.style.overflow = '';
+            }
+        }, 800);
+
+        // Extra safety: on resize, history nav, or page show, ensure scroll restored if no modal
+        function ensureScrollUnlocked() {
+            if (!isAnyModalOpen()) {
+                document.body.style.overflow = '';
+            }
+        }
+        window.addEventListener('resize', ensureScrollUnlocked);
+        window.addEventListener('popstate', ensureScrollUnlocked);
+        window.addEventListener('pageshow', ensureScrollUnlocked);
+        window.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') ensureScrollUnlocked();
+        });
+
+        // Click anywhere not inside an open modal-content → safeguard unlock
+        document.addEventListener('click', function(e) {
+            if (!isAnyModalOpen()) {
+                document.body.style.overflow = '';
+                return;
+            }
+            // If clicking outside any .modal-content, allow existing handler to close then unlock
+            const content = e.target.closest('.modal-content');
+            if (!content) {
+                // unlock shortly after default close handler runs
+                setTimeout(ensureScrollUnlocked, 10);
+            }
+        }, true);
 
         // Form submissions
         document.getElementById('supportForm').addEventListener('submit', function(e) {

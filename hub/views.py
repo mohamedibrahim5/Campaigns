@@ -87,14 +87,21 @@ def broadcast_landing_bot(request: HttpRequest, bot_id: int) -> HttpResponse:
 
     # Access control mapping:
     # - Superuser can access ANY bot
-    # - Non-superuser (e.g., staff/normal) can access bot 2 only
+    # - Candidate user can access ONLY the bot linked to their candidate profile
+    # - (Legacy) Non-superuser without candidate profile could access bot 2 only
     # - Others: forbidden
     user = request.user
     allowed = False
     if user.is_superuser:
         allowed = True
-    elif not user.is_superuser and bot_id == 2:
-        allowed = True
+    else:
+        # Candidate dashboard user: allow their linked bot
+        candidate_profile = getattr(user, 'candidate_profile', None)
+        if candidate_profile and candidate_profile.candidate and candidate_profile.candidate.bot_id:
+            allowed = (candidate_profile.candidate.bot_id == bot_id)
+        # Legacy fallback: allow bot 2 for non-superusers if no candidate profile match
+        elif bot_id == 2:
+            allowed = True
 
     if not allowed:
         return HttpResponse("Forbidden", status=403)
