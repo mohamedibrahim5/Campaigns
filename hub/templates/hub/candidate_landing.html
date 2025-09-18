@@ -134,8 +134,8 @@
         .avatar-wrapper {
             position: relative;
             display: inline-block;
-            width: 128px;
-            height: 128px;
+            width: 140px;
+            height: 140px;
         }
         .avatar-wrapper::before {
             content: '';
@@ -148,15 +148,15 @@
         }
 
         .profile-image {
-            width: 128px;
-            height: 128px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             object-fit: cover;
-            border: 5px solid #fff;
+            border: 6px solid #fff;
             box-shadow: 
-                0 12px 35px rgba(102, 126, 234, 0.35),
-                0 0 0 4px rgba(102, 126, 234, 0.12);
-            transition: all 0.3s ease;
+                0 16px 38px rgba(102, 126, 234, 0.35),
+                0 0 0 4px rgba(102, 126, 234, 0.14);
+            transition: all 0.25s ease;
             animation: pulse 2s infinite;
             position: relative;
             z-index: 1;
@@ -173,14 +173,14 @@
             position: absolute;
             bottom: -6px;
             right: -6px;
-            width: 60px;
-            height: 60px;
+            width: 68px;
+            height: 68px;
             border-radius: 16px;
             object-fit: cover;
             border: 4px solid #fff;
             box-shadow:
-                0 10px 30px rgba(0, 0, 0, 0.15),
-                0 0 0 3px rgba(102,126,234,0.12);
+                0 12px 32px rgba(0, 0, 0, 0.18),
+                0 0 0 3px rgba(102,126,234,0.14);
             background: linear-gradient(45deg, #667eea, #764ba2);
             transition: transform 0.25s ease, box-shadow 0.25s ease;
             z-index: 2;
@@ -188,14 +188,14 @@
         .logo-badge:hover { transform: scale(1.05) rotate(3deg); }
 
         .candidate-logo {
-            width: 60px;
-            height: 60px;
+            width: 62px;
+            height: 62px;
             border-radius: 15px;
             object-fit: cover;
             border: 3px solid #fff;
             box-shadow: 
-                0 6px 20px rgba(102, 126, 234, 0.3),
-                0 0 0 2px rgba(102, 126, 234, 0.1);
+                0 8px 22px rgba(102, 126, 234, 0.34),
+                0 0 0 2px rgba(102, 126, 234, 0.12);
             margin-right: 15px;
             transition: all 0.3s ease;
         }
@@ -221,7 +221,7 @@
 
         .candidate-info .position {
             font-size: 1.1rem;
-            color: #4a5568;
+            color: #ce3052;
             margin-bottom: 5px;
             font-weight: 500;
             animation: fadeInUp 1s ease-out 0.6s both;
@@ -1146,7 +1146,7 @@
         }
     </style>
     <!-- Drawer Menu -->
-    <div id="drawer" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100vh; background: #fff; box-shadow: -10px 0 30px rgba(0,0,0,0.1); z-index: 3001; transition: right 0.3s ease; padding: 20px;">
+    <div id="drawer" style="position: fixed; top: 0; right: -280px; width: 280px; height: 100vh; background: linear-gradient(180deg, #f8fafc, #eef2ff); box-shadow: -10px 0 30px rgba(0,0,0,0.1); z-index: 3001; transition: right 0.3s ease; padding: 20px;">
         <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
             <strong style="color:#667eea;">القائمة</strong>
             <button onclick="toggleDrawer(false)" style="background:none;border:none;font-size:1.6rem;cursor:pointer">×</button>
@@ -1161,6 +1161,7 @@
         <hr style="margin:14px 0; border:none; border-top:1px solid #eee;">
         <a href="#" class="navbar-item" onclick="openSupportModal(); toggleDrawer(false); return false;" style="display:flex; align-items:center; gap:8px; margin-bottom:10px; background: linear-gradient(45deg, #28a745, #20c997);"><span>💪</span><span>دعم المرشح</span></a>
         <a href="#" class="navbar-item" onclick="openAskModal(); toggleDrawer(false); return false;" style="display:flex; align-items:center; gap:8px; margin-bottom:10px; background: linear-gradient(45deg, #20c997, #28a745);"><span>❓</span><span>اسأل المرشح</span></a>
+        <a href="#" class="navbar-item" onclick="openTestimonialModal(); toggleDrawer(false); return false;" style="display:flex; align-items:center; gap:8px; margin-bottom:10px; background: linear-gradient(45deg, #6366f1, #8b5cf6);"><span>✍️</span><span>أضف رأيك</span></a>
         {% if candidate_bot %}
                 <a href="{{ candidate_bot.bot_link|default:'#' }}" class="navbar-item" onclick="toggleDrawer(false)" target="_blank" style="display:flex; align-items:center; gap:8px; background: linear-gradient(45deg, #0088cc, #00a8ff);"><span>🤖</span><span>انضم للبوت</span></a>
         {% endif %}
@@ -1175,15 +1176,15 @@
             <div class="candidate-profile" style="flex-direction:column; gap:18px;">
                 <div style="display:flex; align-items:center; gap:14px; justify-content:center;">
                     <div class="avatar-wrapper" onclick="openAvatarModal()" style="cursor:pointer;">
-                        {% if candidate.profile_image %}
-                            <img src="{{ candidate.profile_image.url }}" alt="{{ candidate.name }}" class="profile-image">
+            {% if candidate.profile_image %}
+                <img src="{{ candidate.profile_image.url }}" alt="{{ candidate.name }}" class="profile-image" loading="lazy">
                         {% else %}
                             <div class="profile-image" style="background: linear-gradient(45deg, var(--brand), var(--brand-2)); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
                                 {{ candidate.name|first }}
                             </div>
                         {% endif %}
                         {% if candidate.logo %}
-                            <img src="{{ candidate.logo.url }}" alt="شعار {{ candidate.name }}" class="logo-badge" onclick="openLogoModal(event)" style="cursor:pointer;">
+                            <img src="{{ candidate.logo.url }}" alt="شعار {{ candidate.name }}" class="logo-badge" onclick="openLogoModal(event)" loading="lazy" style="cursor:pointer;">
                         {% endif %}
                     </div>
                 </div>
@@ -1243,88 +1244,6 @@
         <!-- adding sized box between the stats grid and the content grid -->
         <div style="height: 16px;"></div>
 
-        <!-- Benefits / Features Section -->
-        <div class="card" id="features">
-            <h2>✨ لماذا الانضمام لحملة {{ candidate.name }}؟</h2>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:16px;">
-                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
-                    <div style="font-size:1.6rem; margin-bottom:8px;">🚀</div>
-                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">تأثير ملموس</div>
-                    <div style="color:#64748b; line-height:1.6;">شارك في مبادرات تغير واقع المدينة عبر العمل الميداني والمنصات الرقمية.</div>
-                </div>
-                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
-                    <div style="font-size:1.6rem; margin-bottom:8px;">🤝</div>
-                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">مجتمع داعم</div>
-                    <div style="color:#64748b; line-height:1.6;">تواصل مع آلاف المؤيدين وتابع آخر الأخبار بسهولة.</div>
-                </div>
-                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
-                    <div style="font-size:1.6rem; margin-bottom:8px;">📣</div>
-                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">صوتك مسموع</div>
-                    <div style="color:#64748b; line-height:1.6;">أرسل سؤالك واقتراحاتك مباشرة وتابع ردود المرشح.</div>
-                </div>
-                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
-                    <div style="font-size:1.6rem; margin-bottom:8px;">🔒</div>
-                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">خصوصية مضمونة</div>
-                    <div style="color:#64748b; line-height:1.6;">بياناتك محمية ونستخدمها فقط لأغراض الحملة.</div>
-                </div>
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px;">
-                <!-- <a href="#" onclick="openSupportModal(); return false;" class="action-btn support"><span>💪</span><span>انضم الآن</span></a>
-                <a href="#polls" class="action-btn" style="background:linear-gradient(45deg,#6366f1,#8b5cf6);"><span>📊</span><span>شارك برأيك</span></a> -->
-            </div>
-        </div>
-
-        <!-- Main Content Grid -->
-        <div class="content-grid">
-            <!-- Testimonials Section -->
-            <div class="card" id="testimonials">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-                    <h2 style="margin-bottom:0;">💬 ماذا يقول الداعمون</h2>
-                    <button type="button" onclick="openTestimonialModal()" class="action-btn" style="background:linear-gradient(45deg,#6366f1,#8b5cf6); padding:10px 14px; border-radius:20px;">
-                        ✍️ أضف رأيك
-                    </button>
-                </div>
-                <script>
-                    // Fallback in case main script fails earlier
-                    if (!window.openTestimonialModal) {
-                        window.openTestimonialModal = function() {
-                            var modal = document.getElementById('testimonialModal');
-                            if (!modal) return false;
-                            modal.style.display = 'flex';
-                            modal.scrollTop = 0;
-                            document.body.style.overflow = 'hidden';
-                            return false;
-                        };
-                    }
-                </script>
-                {% if testimonials %}
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
-                    {% for t in testimonials %}
-                    <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
-                        <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">{{ t.name }}</div>
-                        <div style="color:#64748b; line-height:1.7;">{{ t.quote }}</div>
-                        {% if t.role %}
-                        <div style="margin-top:10px; color:#0ea5e9; font-size:0.85rem;">{{ t.role }}</div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="placeholder-content">
-                    <div class="placeholder-icon">💬</div>
-                    <h3>قريبًا آراء الداعمين</h3>
-                    <p>أضف آراء داعميك لزيادة الثقة والتحويل.</p>
-                    <div class="placeholder-stats">
-                        <!-- <div class="stat-item"><span class="stat-number">98%</span><span class="stat-label">رضا المشاركين</span></div>
-                        <div class="stat-item"><span class="stat-number">+300</span><span class="stat-label">تعليق إيجابي</span></div> -->
-                    </div>
-                </div>
-                {% endif %}
-                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px;">
-                    <!-- <a href="#" onclick="openSupportModal(); return false;" class="action-btn support"><span>💪</span><span>ادعم المرشح</span></a>
-                    <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background:linear-gradient(45deg,#20c997,#28a745);"><span>❓</span><span>اسأل سؤالاً</span></a> -->
-                </div>
-            </div>
             <!-- Bio Section -->
             <div class="card bio-section" id="bio" style="cursor:pointer;" onclick="openBioModal()">
                 <h2>📖 نبذة عن المرشح</h2>
@@ -1355,24 +1274,7 @@
                 </div>
             </div>
 
-            <!-- FAQ Section -->
-            <div class="card" id="faq">
-                <h2>❓ الأسئلة الشائعة</h2>
-                <div style="display:grid; gap:10px;">
-                    <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
-                        <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">كيف أسجل دعمي؟</button>
-                        <div style="display:none; padding:14px 16px; color:#64748b;">اضغط على زر "ادعم المرشح" واملأ البيانات المطلوبة لإضافة دعمك فورًا.</div>
-                    </div>
-                    <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
-                        <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">هل بياناتي آمنة؟</button>
-                        <div style="display:none; padding:14px 16px; color:#64748b;">نعم، نلتزم بحماية بياناتك ولا نشاركها إلا لأغراض الحملة.</div>
-                    </div>
-                    <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
-                        <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">كيف أتلقى التحديثات؟</button>
-                        <div style="display:none; padding:14px 16px; color:#64748b;">انضم إلى قناة البوت أو فعّل الإشعارات عبر الموقع لتصلك آخر الأخبار.</div>
-                    </div>
-                </div>
-            </div>
+            
 
             <!-- Program Section -->
             <div class="card" id="program" style="cursor:pointer;" onclick="openProgramModal()">
@@ -1541,9 +1443,12 @@
 
             <!-- Polls Section -->
             <div class="card" id="polls">
-                <h2>📊 الاستطلاعات</h2>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                    <h2 style="margin-bottom:0;">📊 الاستطلاعات</h2>
+                    <button type="button" id="pollsToggleBtn" class="action-btn" onclick="togglePolls()" style="background:linear-gradient(45deg,#64748b,#475569); padding:8px 12px; border-radius:12px;">إخفاء</button>
+                </div>
                 {% if polls %}
-                    <div class="polls-grid">
+                    <div id="pollsContent" class="polls-grid" style="display:block;">
                         {% for poll in polls %}
                         <div class="poll-card" data-poll-id="{{ poll.id }}" onclick="openPollModal('{{ poll.id }}')">
                             <div class="poll-question">{{ poll.question }}</div>
@@ -1567,7 +1472,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="placeholder-content">
+                    <div id="pollsContent" class="placeholder-content" style="display:block;">
                         <div class="placeholder-icon">📊</div>
                         <h3>الاستطلاعات</h3>
                         <p>سيتم إضافة استطلاعات رأي حول القضايا المهمة قريباً.</p>
@@ -1588,6 +1493,102 @@
                     </div>
                 {% endif %}
             </div>
+
+            <!-- Benefits / Features Section -->
+        <div class="card" id="features">
+            <h2>✨ لماذا الانضمام لحملة {{ candidate.name }}؟</h2>
+            {% if benefits %}
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:16px;">
+                {% for b in benefits %}
+                <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
+                    {% if b.icon %}<div style="font-size:1.6rem; margin-bottom:8px;">{{ b.icon }}</div>{% endif %}
+                    <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">{{ b.title }}</div>
+                    {% if b.description %}<div style="color:#64748b; line-height:1.6;">{{ b.description }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="placeholder-content">
+                <div class="placeholder-icon">✨</div>
+                <h3>أضف مزايا حملتك من لوحة التحكم</h3>
+                <p>قم بإضافة نقاط القوة والمزايا من لوحة التحكم لتظهر هنا للزوار.</p>
+            </div>
+            {% endif %}
+        </div>
+
+                
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Testimonials Section -->
+            <div class="card" id="testimonials">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                    <h2 style="margin-bottom:0;">💬 ماذا يقول الداعمون</h2>
+                    <button type="button" onclick="openTestimonialModal()" class="action-btn" style="background:linear-gradient(45deg,#6366f1,#8b5cf6); padding:10px 14px; border-radius:20px;">
+                        ✍️ أضف رأيك
+                    </button>
+                </div>
+                <script>
+                    // Fallback in case main script fails earlier
+                    if (!window.openTestimonialModal) {
+                        window.openTestimonialModal = function() {
+                            var modal = document.getElementById('testimonialModal');
+                            if (!modal) return false;
+                            modal.style.display = 'flex';
+                            modal.scrollTop = 0;
+                            document.body.style.overflow = 'hidden';
+                            return false;
+                        };
+                    }
+                </script>
+                {% if testimonials %}
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+                    {% for t in testimonials %}
+                    <div style="background:#f8fafc; border-radius:14px; padding:18px; border:1px solid #eef2ff;">
+                        <div style="font-weight:700; color:#1f2937; margin-bottom:6px;">{{ t.name }}</div>
+                        <div style="color:#64748b; line-height:1.7;">{{ t.quote }}</div>
+                        {% if t.role %}
+                        <div style="margin-top:10px; color:#0ea5e9; font-size:0.85rem;">{{ t.role }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">💬</div>
+                    <h3>قريبًا آراء الداعمين</h3>
+                    <p>أضف آراء داعميك لزيادة الثقة والتحويل.</p>
+                    <div class="placeholder-stats">
+                        <!-- <div class="stat-item"><span class="stat-number">98%</span><span class="stat-label">رضا المشاركين</span></div>
+                        <div class="stat-item"><span class="stat-number">+300</span><span class="stat-label">تعليق إيجابي</span></div> -->
+                    </div>
+                </div>
+                {% endif %}
+                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px;">
+                    <!-- <a href="#" onclick="openSupportModal(); return false;" class="action-btn support"><span>💪</span><span>ادعم المرشح</span></a>
+                    <a href="#" onclick="openAskModal(); return false;" class="action-btn" style="background:linear-gradient(45deg,#20c997,#28a745);"><span>❓</span><span>اسأل سؤالاً</span></a> -->
+                </div>
+            </div>
+
+
+        <!-- FAQ Section -->
+        <div class="card" id="faq">
+            <h2>❓ الأسئلة الشائعة</h2>
+            <div style="display:grid; gap:10px;">
+                <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
+                    <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">كيف أسجل دعمي؟</button>
+                    <div style="display:none; padding:14px 16px; color:#64748b;">اضغط على زر "ادعم المرشح" واملأ البيانات المطلوبة لإضافة دعمك فورًا.</div>
+                </div>
+                <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
+                    <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">هل بياناتي آمنة؟</button>
+                    <div style="display:none; padding:14px 16px; color:#64748b;">نعم، نلتزم بحماية بياناتك ولا نشاركها إلا لأغراض الحملة.</div>
+                </div>
+                <div style="border:1px solid #eef2ff; border-radius:12px; overflow:hidden;">
+                    <button onclick="toggleFaq(this)" style="width:100%; text-align:right; padding:14px 16px; background:#f8fafc; border:none; cursor:pointer; font-weight:600; color:#1f2937;">كيف أتلقى التحديثات؟</button>
+                    <div style="display:none; padding:14px 16px; color:#64748b;">انضم إلى قناة البوت أو فعّل الإشعارات عبر الموقع لتصلك آخر الأخبار.</div>
+                </div>
+            </div>
+        </div>
 
             
 
@@ -2054,6 +2055,52 @@
             document.body.style.overflow = open ? 'hidden' : '';
         }
 
+        // Polls collapse/expand
+        function togglePolls() {
+            var content = document.getElementById('pollsContent');
+            var btn = document.getElementById('pollsToggleBtn');
+            if (!content || !btn) return;
+            var isHidden = content.style.display === 'none' || content.style.display === '';
+            content.style.display = isHidden ? 'block' : 'none';
+            btn.textContent = isHidden ? 'إخفاء' : 'إظهار';
+        }
+
+        // Add universal icon close button to every modal, aligned with title
+        function injectUniversalCloseButtons() {
+            var contents = document.querySelectorAll('.modal .modal-content');
+            contents.forEach(function(modalContent) {
+                if (modalContent.querySelector('.modal-universal-close')) return;
+
+                var closeBtn = document.createElement('button');
+                closeBtn.type = 'button';
+                closeBtn.className = 'modal-universal-close';
+                closeBtn.setAttribute('aria-label', 'إغلاق');
+                closeBtn.textContent = '✖';
+                closeBtn.style.cssText = 'background:#ffffff; color:#334155; border:1px solid #e2e8f0; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; cursor:pointer; font-size:16px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.06);';
+                closeBtn.addEventListener('mouseenter', function(){ closeBtn.style.background = '#f8fafc'; });
+                closeBtn.addEventListener('mouseleave', function(){ closeBtn.style.background = '#ffffff'; });
+                closeBtn.addEventListener('click', function () {
+                    var modal = modalContent.closest('.modal');
+                    if (modal) modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                });
+
+                var heading = modalContent.querySelector('h2');
+                if (heading) {
+                    var headerWrap = document.createElement('div');
+                    headerWrap.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; margin-bottom:8px;';
+                    // Move the existing heading into the wrapper
+                    headerWrap.appendChild(heading);
+                    headerWrap.appendChild(closeBtn);
+                    // Insert wrapper at the top of modal-content
+                    modalContent.insertBefore(headerWrap, modalContent.firstChild);
+                } else {
+                    // Fallback: place button at the top-left
+                    modalContent.insertBefore(closeBtn, modalContent.firstChild);
+                }
+            });
+        }
+
         // Init on load
         document.addEventListener('DOMContentLoaded', function() {
             // Ensure modals are direct children of <body> to avoid positioning/scroll issues
@@ -2066,6 +2113,9 @@
 
             // Ensure body scroll is unlocked on load
             document.body.style.overflow = '';
+
+            // Inject close buttons into all modals
+            try { injectUniversalCloseButtons(); } catch (e) {}
 
             // Enforce numeric-only and max length 11 for phone inputs
             const phoneInputs = ['user_phone', 'voter_phone', 'asker_phone']
@@ -2502,14 +2552,23 @@
                 })
                 .then(r => r.json())
                 .then(data => {
+                    showToast(data.message || (data.success ? 'تم الإرسال' : 'حدث خطأ'));
                     if (data.success) { this.reset(); closeTestimonialModal(); }
                 })
-                .catch(() => {})
+                .catch(() => showToast('حدث خطأ أثناء الإرسال', true))
                 .finally(() => { submitBtn.textContent = original; submitBtn.disabled = false; submitBtn.classList.remove('loading'); });
             });
         }
 
-        function showToast(){}
+        function showToast(message, isError) {
+            const el = document.getElementById('toast');
+            if (!el) return;
+            el.textContent = message || '';
+            el.style.background = isError ? '#dc2626' : '#16a34a';
+            el.style.display = 'block';
+            clearTimeout(window.__toastTimer);
+            window.__toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2800);
+        }
                 document.body.style.overflow = '';
             }
         });
@@ -2542,7 +2601,7 @@
             const content = document.getElementById('logoContent');
             if (!modal || !content) return;
             {% if candidate.logo %}
-                content.innerHTML = '<div style="display:flex; justify-content:center;"><img src="{{ candidate.logo.url }}" alt="شعار {{ candidate.name }}" style="max-width:100%; max-height:60vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);"></div>';
+                content.innerHTML = '<div style="display:flex; justify-content:center; padding:10px;"><img src="{{ candidate.logo.url }}" alt="شعار {{ candidate.name }}" style="width:100%; height:auto; border-radius:16px; box-shadow:0 14px 36px rgba(0,0,0,0.18);"></div>';
             {% else %}
                 content.innerHTML = '<div class="placeholder-content"><div class="placeholder-icon">🏷️</div><h3>لا يوجد شعار متاح</h3></div>';
             {% endif %}

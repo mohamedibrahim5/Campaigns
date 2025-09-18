@@ -1652,7 +1652,6 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
         name = (request.POST.get('t_name') or '').strip()
         role = (request.POST.get('t_role') or '').strip()
         quote = (request.POST.get('t_quote') or '').strip()
-        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
         if not name or not quote:
             if is_ajax:
                 return JsonResponse({'success': False, 'message': 'يرجى إدخال الاسم والرسالة'})
@@ -1756,6 +1755,9 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
     # Get testimonials
     from .models import Testimonial
     testimonials = Testimonial.objects.filter(candidate=candidate, is_public=True).order_by('display_order', '-created_at')[:6]
+    # Get dynamic benefits
+    from .models import CampaignBenefit
+    benefits = CampaignBenefit.objects.filter(candidate=candidate, is_public=True).order_by('display_order', '-created_at')[:8]
     
     context = {
         'candidate': candidate,
@@ -1766,6 +1768,7 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
         'candidate_bot': candidate_bot,
         'gallery_items': gallery_items,
         'testimonials': testimonials,
+        'benefits': benefits,
     }
     return render(request, 'hub/candidate_landing.html', context)
 
@@ -1794,7 +1797,7 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
         if not name or not quote:
             return JsonResponse({'success': False, 'message': 'يرجى إدخال الاسم والرسالة'})
         Testimonial.objects.create(candidate=candidate, name=name, role=role or None, quote=quote, is_public=False)
-        return JsonResponse({'success': True, 'message': 'تم استلام رأيك بانتظار المراجعة. شكرًا لدعمك!'})
+        # return JsonResponse({'success': True, 'message': 'تم استلام رأيك بانتظار المراجعة. شكرًا لدعمك!'})
 
     # Reuse landing logic data
     events = Event.objects.filter(candidate=candidate, is_public=True).order_by('-start_datetime')[:5]
@@ -1818,8 +1821,9 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
     candidate_bot = candidate.bot
     gallery_items = Gallery.objects.filter(candidate=candidate, is_public=True).order_by('-is_featured', '-created_at')[:12]
     # Public testimonials
-    from .models import Testimonial
+    from .models import Testimonial, CampaignBenefit
     testimonials = Testimonial.objects.filter(candidate=candidate, is_public=True).order_by('display_order', '-created_at')[:6]
+    benefits = CampaignBenefit.objects.filter(candidate=candidate, is_public=True).order_by('display_order', '-created_at')[:8]
     context = {
         'candidate': candidate,
         'events': events,
@@ -1829,6 +1833,7 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
         'candidate_bot': candidate_bot,
         'gallery_items': gallery_items,
         'testimonials': testimonials,
+        'benefits': benefits,
     }
     return render(request, 'hub/candidate_landing.html', context)
 
@@ -2228,6 +2233,59 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
             except Testimonial.DoesNotExist:
                 pass
 
+        # ===== Benefits actions =====
+        elif action == 'add_benefit':
+            from .models import CampaignBenefit
+            title = (request.POST.get('benefit_title') or '').strip()
+            description = (request.POST.get('benefit_description') or '').strip()
+            icon = (request.POST.get('benefit_icon') or '').strip()
+            is_public = request.POST.get('benefit_is_public') == 'on'
+            if title:
+                CampaignBenefit.objects.create(
+                    candidate=candidate,
+                    title=title,
+                    description=description or None,
+                    icon=icon or None,
+                    is_public=is_public,
+                )
+                messages.success(request, 'تم إضافة الميزة بنجاح!')
+
+        elif action == 'delete_benefit':
+            from .models import CampaignBenefit
+            bid = request.POST.get('benefit_id')
+            try:
+                b = CampaignBenefit.objects.get(id=bid, candidate=candidate)
+                b.delete()
+                messages.success(request, 'تم حذف الميزة بنجاح!')
+            except CampaignBenefit.DoesNotExist:
+                pass
+
+        elif action == 'toggle_benefit_visibility':
+            from .models import CampaignBenefit
+            bid = request.POST.get('benefit_id')
+            try:
+                b = CampaignBenefit.objects.get(id=bid, candidate=candidate)
+                b.is_public = not b.is_public
+                b.save(update_fields=['is_public'])
+                messages.success(request, 'تم تحديث حالة العرض!')
+            except CampaignBenefit.DoesNotExist:
+                pass
+
+        elif action == 'update_benefit_order':
+            from .models import CampaignBenefit
+            bid = request.POST.get('benefit_id')
+            try:
+                new_order = int(request.POST.get('display_order') or 0)
+            except ValueError:
+                new_order = 0
+            try:
+                b = CampaignBenefit.objects.get(id=bid, candidate=candidate)
+                b.display_order = new_order
+                b.save(update_fields=['display_order'])
+                messages.success(request, 'تم تحديث ترتيب العرض!')
+            except CampaignBenefit.DoesNotExist:
+                pass
+
         elif action == 'answer_question':
             # Save answer to a question from the Questions modal
             q_id = request.POST.get('question_id')
@@ -2251,8 +2309,9 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
     gallery_items = Gallery.objects.filter(candidate=candidate).order_by('-is_featured', '-created_at')
     questions = DailyQuestion.objects.filter(candidate=candidate).order_by('-asked_at')
     # Testimonials for dashboard
-    from .models import Testimonial
+    from .models import Testimonial, CampaignBenefit
     testimonials = Testimonial.objects.filter(candidate=candidate).order_by('display_order', '-created_at')
+    benefits = CampaignBenefit.objects.filter(candidate=candidate).order_by('display_order', '-created_at')
     
     context = {
         'candidate': candidate,
@@ -2264,5 +2323,6 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
         'gallery_items': gallery_items,
         'questions': questions,
         'testimonials': testimonials,
+        'benefits': benefits,
     }
     return render(request, 'hub/candidate_dashboard.html', context)

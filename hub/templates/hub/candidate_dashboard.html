@@ -533,14 +533,15 @@
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab active" onclick="showTab('profile')">الملف الشخصي</button>
-            <button class="tab" onclick="showTab('events')">الفعاليات</button>
-            <button class="tab" onclick="showTab('speeches')">الخطابات</button>
-            <button class="tab" onclick="showTab('polls')">الاستطلاعات</button>
-            <button class="tab" onclick="showTab('gallery')">المعرض</button>
-            <button class="tab" onclick="showTab('testimonials')">آراء الداعمين</button>
-            <button class="tab" onclick="showTab('supporters')">المؤيدون</button>
-            <button class="tab" onclick="showTab('questions')">الأسئلة</button>
+            <button class="tab active" onclick="showTab(event, 'profile')">الملف الشخصي</button>
+            <button class="tab" onclick="showTab(event, 'events')">الفعاليات</button>
+            <button class="tab" onclick="showTab(event, 'speeches')">الخطابات</button>
+            <button class="tab" onclick="showTab(event, 'polls')">الاستطلاعات</button>
+            <button class="tab" onclick="showTab(event, 'gallery')">المعرض</button>
+            <button class="tab" onclick="showTab(event, 'testimonials')">الآراء</button>
+            <button class="tab" onclick="showTab(event, 'supporters')">الداعمين</button>
+            <button class="tab" onclick="showTab(event, 'benefits')">المزايا</button>
+            <button class="tab" onclick="showTab(event, 'questions')">الأسئلة</button>
         </div>
 
         <!-- Profile Tab -->
@@ -1126,7 +1127,100 @@
             </div>
         </div>
 
-        <div id="testimonials" class="tab-content" style="display:none;">
+        <!-- Benefits Tab -->
+        <div id="benefits" class="tab-content">
+            <div class="card">
+                <h2>إضافة ميزة جديدة</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_benefit">
+                    <div class="form-group">
+                        <label for="benefit_title">العنوان</label>
+                        <input type="text" id="benefit_title" name="benefit_title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="benefit_description">الوصف (اختياري)</label>
+                        <textarea id="benefit_description" name="benefit_description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="benefit_icon">الرمز (اختياري - إيموجي مثل 🚀)</label>
+                        <input type="text" id="benefit_icon" name="benefit_icon" maxlength="8" placeholder="مثال: 🚀">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="benefit_is_public" name="benefit_is_public" checked>
+                            <label for="benefit_is_public">عرض للعامة</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">إضافة الميزة</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>المزايا الحالية</h2>
+                {% if benefits %}
+                    <div style="overflow:auto;">
+                        <table class="data-table" style="width:100%; min-width: 900px;">
+                            <thead>
+                                <tr>
+                                    <th>الرمز</th>
+                                    <th>العنوان</th>
+                                    <th>الوصف</th>
+                                    <th>الحالة</th>
+                                    <th>الترتيب</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in benefits %}
+                                <tr>
+                                    <td>{% if b.icon %}{{ b.icon }}{% else %}-{% endif %}</td>
+                                    <td style="font-weight:600;">{{ b.title }}</td>
+                                    <td style="max-width:420px; white-space:normal;">{{ b.description|default:'—' }}</td>
+                                    <td>
+                                        <span style="padding:2px 8px; border-radius:12px; color:#fff; background:{% if b.is_public %}#22c55e{% else %}#6b7280{% endif %}; font-size:0.8rem;">
+                                            {% if b.is_public %}منشور{% else %}مخفي{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <form method="post" style="display:flex; gap:6px; align-items:center;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="update_benefit_order">
+                                            <input type="hidden" name="benefit_id" value="{{ b.id }}">
+                                            <input type="number" name="display_order" value="{{ b.display_order }}" style="width:80px;">
+                                            <button type="submit" class="btn">حفظ</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <div style="display:flex; gap:6px;">
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="toggle_benefit_visibility">
+                                                <input type="hidden" name="benefit_id" value="{{ b.id }}">
+                                                <button type="submit" class="btn" style="background:{% if b.is_public %}#6b7280{% else %}#22c55e{% endif %}; color:white;">
+                                                    {% if b.is_public %}إخفاء{% else %}نشر{% endif %}
+                                                </button>
+                                            </form>
+                                            <form method="post" onsubmit="return confirm('تأكيد حذف هذه الميزة؟')">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="delete_benefit">
+                                                <input type="hidden" name="benefit_id" value="{{ b.id }}">
+                                                <button type="submit" class="btn btn-danger">حذف</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>لا توجد مزايا حتى الآن.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="testimonials" class="tab-content">
             <div class="card">
                 <h2>إضافة رأي داعم</h2>
                 <form method="post">
@@ -1157,62 +1251,30 @@
             <div class="card">
                 <h2>الآراء الحالية</h2>
                 {% if testimonials %}
-                    <div style="overflow:auto;">
-                        <table class="data-table" style="width:100%; min-width: 900px;">
-                            <thead>
-                                <tr>
-                                    <th>الاسم</th>
-                                    <th>الصفة</th>
-                                    <th>النص</th>
-                                    <th>الحالة</th>
-                                    <th>الترتيب</th>
-                                    <th>تاريخ الإنشاء</th>
-                                    <th>إجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for t in testimonials %}
-                                <tr>
-                                    <td style="font-weight:600;">{{ t.name }}</td>
-                                    <td>{% if t.role %}{{ t.role }}{% else %}-{% endif %}</td>
-                                    <td style="max-width:420px; white-space:normal;">{{ t.quote }}</td>
-                                    <td>
-                                        <span style="padding:2px 8px; border-radius:12px; color:#fff; background:{% if t.is_public %}#22c55e{% else %}#6b7280{% endif %}; font-size:0.8rem;">
-                                            {% if t.is_public %}منشور{% else %}مخفي{% endif %}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <form method="post" style="display:flex; gap:6px; align-items:center;">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="action" value="update_testimonial_order">
-                                            <input type="hidden" name="testimonial_id" value="{{ t.id }}">
-                                            <input type="number" name="display_order" value="{{ t.display_order }}" style="width:80px;">
-                                            <button type="submit" class="btn">حفظ</button>
-                                        </form>
-                                    </td>
-                                    <td>{{ t.created_at|date:"Y-m-d H:i" }}</td>
-                                    <td>
-                                        <div style="display:flex; gap:6px;">
-                                            <form method="post">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="action" value="toggle_testimonial_visibility">
-                                                <input type="hidden" name="testimonial_id" value="{{ t.id }}">
-                                                <button type="submit" class="btn" style="background:{% if t.is_public %}#6b7280{% else %}#22c55e{% endif %}; color:white;">
-                                                    {% if t.is_public %}إخفاء{% else %}نشر{% endif %}
-                                                </button>
-                                            </form>
-                                            <form method="post" onsubmit="return confirm('تأكيد حذف هذا الرأي؟')">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="action" value="delete_testimonial">
-                                                <input type="hidden" name="testimonial_id" value="{{ t.id }}">
-                                                <button type="submit" class="btn btn-danger">حذف</button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                        {% for t in testimonials %}
+                        <div style="background:#f8f9fa; border-radius:10px; padding:14px; border:1px solid #e9ecef;">
+                            <div style="font-weight:700; color:#1f2937;">{{ t.name }}</div>
+                            {% if t.role %}<div style="color:#0ea5e9; font-size:0.85rem;">{{ t.role }}</div>{% endif %}
+                            <div style="color:#64748b; margin-top:8px;">{{ t.quote }}</div>
+                            <div style="display:flex; gap:6px; margin-top:10px;">
+                                <form method="post" onsubmit="return confirm('تأكيد حذف هذا الرأي؟')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_testimonial">
+                                    <input type="hidden" name="testimonial_id" value="{{ t.id }}">
+                                    <button type="submit" class="btn btn-danger">حذف</button>
+                                </form>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="toggle_testimonial_visibility">
+                                    <input type="hidden" name="testimonial_id" value="{{ t.id }}">
+                                    <button type="submit" class="btn" style="background:{% if t.is_public %}#6b7280{% else %}#22c55e{% endif %}; color:white;">
+                                        {% if t.is_public %}إخفاء{% else %}نشر{% endif %}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 {% else %}
                     <p>لا توجد آراء حتى الآن.</p>
@@ -1292,7 +1354,7 @@
 
     <script>
         // Tab functionality
-        function showTab(tabName) {
+        function showTab(e, tabName) {
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(content => content.classList.remove('active'));
@@ -1305,7 +1367,9 @@
             document.getElementById(tabName).classList.add('active');
             
             // Add active class to clicked tab
-            event.target.classList.add('active');
+            if (e && e.currentTarget) {
+                e.currentTarget.classList.add('active');
+            }
         }
 
         // Poll options management

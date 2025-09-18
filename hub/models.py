@@ -301,6 +301,25 @@ class Testimonial(models.Model):
     def __str__(self):
         return f"{self.name} – {self.candidate.name}"
 
+
+class CampaignBenefit(models.Model):
+    """Conversion-focused benefit/feature tiles for the landing page"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='benefits')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    icon = models.CharField(max_length=8, blank=True, null=True, help_text="Emoji or short icon text, e.g., 🚀")
+    display_order = models.PositiveIntegerField(default=0)
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-created_at']
+
+    def __str__(self) -> str:
+        return f"{self.title} – {self.candidate.name}"
+
 class Event(models.Model):
     """Events and announcements for candidates"""
     EVENT_TYPES = [
