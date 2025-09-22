@@ -18,7 +18,7 @@
   <div class="top">
     <h2>{{ bot.name }} – Recent Logs</h2>
     <div>
-      <a class="button" href="/hub/logs/{{ bot.id }}/pdf/">Download PDF</a>
+      <a class="button" href="{% if bot.token %}/hub/logs/token/{{ bot.token }}/pdf/{% else %}/hub/logs/{{ bot.id }}/pdf/{% endif %}">Download PDF</a>
       <a class="button" href="/hub/landing/{{ bot.id }}/" style="margin-left:8px;">Back</a>
     </div>
   </div>

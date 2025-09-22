@@ -109,6 +109,111 @@ def broadcast_landing_bot(request: HttpRequest, bot_id: int) -> HttpResponse:
     return render(request, 'hub/landing.html', {'bot': bot})
 
 
+@login_required()
+def broadcast_landing_bot_token(request: HttpRequest, bot_token: str) -> HttpResponse:
+    """Per-bot landing page by token; same access rules as ID-based view."""
+    try:
+        bot = Bot.objects.get(token=bot_token)
+    except Bot.DoesNotExist:
+        return HttpResponse(status=404)
+
+    # Reuse the same access control logic as ID-based
+    user = request.user
+    allowed = False
+    if user.is_superuser:
+        allowed = True
+    else:
+        candidate_profile = getattr(user, 'candidate_profile', None)
+        if candidate_profile and candidate_profile.candidate and candidate_profile.candidate.bot_id:
+            allowed = (candidate_profile.candidate.bot_id == bot.id)
+        elif bot.id == 2:
+            allowed = True
+
+    if not allowed:
+        return HttpResponse("Forbidden", status=403)
+
+    return render(request, 'hub/landing.html', {'bot': bot})
+
+
+@login_required()
+def bot_logs_html_token(request: HttpRequest, bot_token: str) -> HttpResponse:
+    try:
+        bot = Bot.objects.get(token=bot_token)
+    except Bot.DoesNotExist:
+        return HttpResponse(status=404)
+    # Access control mirrors ID-based
+    user = request.user
+    allowed = False
+    if user.is_superuser:
+        allowed = True
+    else:
+        candidate_profile = getattr(user, 'candidate_profile', None)
+        if candidate_profile and candidate_profile.candidate and candidate_profile.candidate.bot_id:
+            allowed = (candidate_profile.candidate.bot_id == bot.id)
+        elif bot.id == 2:
+            allowed = True
+    if not allowed:
+        return HttpResponse("Forbidden", status=403)
+    logs = MessageLog.objects.filter(bot=bot).select_related('bot_user').order_by('-received_at')[:500]
+    return render(request, 'hub/logs.html', {'bot': bot, 'logs': logs})
+
+
+@login_required()
+def bot_logs_pdf_token(request: HttpRequest, bot_token: str):
+    try:
+        bot = Bot.objects.get(token=bot_token)
+    except Bot.DoesNotExist:
+        return HttpResponse(status=404)
+    user = request.user
+    allowed = False
+    if user.is_superuser:
+        allowed = True
+    else:
+        candidate_profile = getattr(user, 'candidate_profile', None)
+        if candidate_profile and candidate_profile.candidate and candidate_profile.candidate.bot_id:
+            allowed = (candidate_profile.candidate.bot_id == bot.id)
+        elif bot.id == 2:
+            allowed = True
+    if not allowed:
+        return HttpResponse("Forbidden", status=403)
+
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.units import mm
+    except Exception:
+        return JsonResponse({'error': 'PDF export requires reportlab. Install with: pip install reportlab'}, status=501)
+
+    logs = MessageLog.objects.filter(bot=bot).select_related('bot_user').order_by('-received_at')[:1000]
+
+    from io import BytesIO
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    margin = 15 * mm
+    y = height - margin
+    title = f"Message Logs for {bot.name}"
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(margin, y, title)
+    y -= 12 * mm
+    c.setFont("Helvetica", 9)
+    for log in logs:
+        line = f"{log.received_at:%Y-%m-%d %H:%M} | {getattr(log.bot_user, 'username', '-') or getattr(log.bot_user, 'phone_number', '-')} | {log.text or ''}"
+        if y < margin + 20:
+            c.showPage()
+            y = height - margin
+            c.setFont("Helvetica", 9)
+        c.drawString(margin, y, line[:120])
+        y -= 6 * mm
+    c.showPage()
+    c.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="bot_{bot.id}_logs.pdf"'
+    return response
+
 @csrf_exempt
 @login_required()
 @require_POST
@@ -135,9 +240,18 @@ def bot_logs_html(request: HttpRequest, bot_id: int) -> HttpResponse:
         bot = Bot.objects.get(id=bot_id)
     except Bot.DoesNotExist:
         return HttpResponse(status=404)
-    # Access control mirrors landing access
+    # Access control: superuser or candidate user owning the bot
     user = request.user
-    if not (user.is_superuser or (not user.is_superuser and bot_id == 2)):
+    allowed = False
+    if user.is_superuser:
+        allowed = True
+    else:
+        candidate_profile = getattr(user, 'candidate_profile', None)
+        if candidate_profile and candidate_profile.candidate and candidate_profile.candidate.bot_id:
+            allowed = (candidate_profile.candidate.bot_id == bot.id)
+        elif bot_id == 2:
+            allowed = True
+    if not allowed:
         return HttpResponse("Forbidden", status=403)
     logs = MessageLog.objects.filter(bot=bot).select_related('bot_user').order_by('-received_at')[:500]
     return render(request, 'hub/logs.html', {'bot': bot, 'logs': logs})
@@ -150,7 +264,16 @@ def bot_logs_pdf(request: HttpRequest, bot_id: int):
     except Bot.DoesNotExist:
         return HttpResponse(status=404)
     user = request.user
-    if not (user.is_superuser or (not user.is_superuser and bot_id == 2)):
+    allowed = False
+    if user.is_superuser:
+        allowed = True
+    else:
+        candidate_profile = getattr(user, 'candidate_profile', None)
+        if candidate_profile and candidate_profile.candidate and candidate_profile.candidate.bot_id:
+            allowed = (candidate_profile.candidate.bot_id == bot.id)
+        elif bot_id == 2:
+            allowed = True
+    if not allowed:
         return HttpResponse("Forbidden", status=403)
 
     try:

@@ -226,7 +226,7 @@
                     {% else %}
                       <p id="bot_desc_display" class="muted"></p>
                     {% endif %}
-                    <p><a href="/hub/logs/{{ bot.id }}/" target="_blank">View Message Logs</a> · <a href="/hub/logs/{{ bot.id }}/pdf/" target="_blank">Download PDF</a></p>
+                    <p><a href="{% if bot.token %}/hub/logs/token/{{ bot.token }}/{% else %}/hub/logs/{{ bot.id }}/{% endif %}" target="_blank">View Message Logs</a> · <a href="{% if bot.token %}/hub/logs/token/{{ bot.token }}/pdf/{% else %}/hub/logs/{{ bot.id }}/pdf/{% endif %}" target="_blank">Download PDF</a></p>
                 </div>
                 <div>
                     {% if bot.image_url %}

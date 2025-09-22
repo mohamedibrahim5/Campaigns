@@ -527,7 +527,7 @@
         <div class="preview-section">
             <h3>صفحة الهبوط للبوت</h3>
             <p>يمكنك إدارة الهبوط الخاص بالبوت المرتبط بحملتك:</p>
-            <a href="/hub/landing/{{ candidate.bot.id }}/" target="_blank" class="preview-link">فتح صفحة الهبوط للبوت (ID: {{ candidate.bot.id }})</a>
+            <a href="{% if candidate.bot and candidate.bot.token %}/hub/landing/token/{{ candidate.bot.token }}/{% else %}/hub/landing/{{ candidate.bot.id }}/{% endif %}" target="_blank" class="preview-link">فتح صفحة الهبوط للبوت</a>
         </div>
         {% endif %}
 
