@@ -134,7 +134,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://4b6d806f21bf.ngrok-free.app',
     'https://d8675bdefe79.ngrok-free.app',
     'https://3ad99fb5c246.ngrok-free.app',  # Current ngrok tunnel
-    'https://9e2cf8ea8f42.ngrok-free.app'
+    'https://9e2cf8ea8f42.ngrok-free.app',
+    'https://e0539b219772.ngrok-free.app'
 ]
 
 # Auth

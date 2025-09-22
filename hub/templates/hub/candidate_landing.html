@@ -2165,12 +2165,15 @@
         });
 
         // Support Modal Functions
-        function openSupportModal() {
-            const modal = document.getElementById('supportModal');
-            if (!modal) return;
+        function openSupportModal(e) {
+            try { if (e && e.preventDefault) e.preventDefault(); else if (window.event && window.event.preventDefault) window.event.preventDefault(); } catch (err) {}
+            const list = document.querySelectorAll('[id="supportModal"]');
+            const modal = list[list.length - 1] || document.getElementById('supportModal');
+            if (!modal) return false;
             modal.style.display = 'flex';
             modal.scrollTop = 0;
             document.body.style.overflow = 'hidden';
+            return false;
         }
 
         function closeSupportModal() {
@@ -2235,12 +2238,15 @@
         }
 
         // Ask Modal Functions
-        function openAskModal() {
-            const modal = document.getElementById('askModal');
-            if (!modal) return;
+        function openAskModal(e) {
+            try { if (e && e.preventDefault) e.preventDefault(); else if (window.event && window.event.preventDefault) window.event.preventDefault(); } catch (err) {}
+            const list = document.querySelectorAll('[id="askModal"]');
+            const modal = list[list.length - 1] || document.getElementById('askModal');
+            if (!modal) return false;
             modal.style.display = 'flex';
             modal.scrollTop = 0;
             document.body.style.overflow = 'hidden';
+            return false;
         }
 
         function closeAskModal() {
@@ -2767,9 +2773,14 @@
                 headers: {
                     'X-CSRFToken': getCSRFToken(),
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(async response => {
+                const ct = response.headers.get('content-type') || '';
+                const data = ct.includes('application/json') ? await response.json() : { success: false, message: 'استجابة غير متوقعة من الخادم' };
+                return data;
+            })
             .then(data => {
                 if (data.success) {
                     alert(data.message);

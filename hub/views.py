@@ -2210,14 +2210,13 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
                 event.save()
         
         elif action == 'add_speech':
-            # Handle new speech creation
-            speech = Speech.objects.create(
+            # Handle new speech creation (align with model fields)
+            Speech.objects.create(
                 candidate=candidate,
-                title=request.POST.get('speech_title', ''),
-                content=request.POST.get('speech_content', ''),
-                summary=request.POST.get('speech_summary', ''),
-                speech_type=request.POST.get('speech_type', 'campaign'),
-                ai_generated=request.POST.get('speech_ai_generated') == 'on',
+                title=request.POST.get('speech_title', '').strip(),
+                ideas='',
+                full_speech=request.POST.get('speech_content', '').strip(),
+                summary=request.POST.get('speech_summary', '').strip(),
             )
         
         elif action == 'add_poll':
