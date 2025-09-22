@@ -1922,6 +1922,60 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
         Testimonial.objects.create(candidate=candidate, name=name, role=role or None, quote=quote, is_public=False)
         # return JsonResponse({'success': True, 'message': 'تم استلام رأيك بانتظار المراجعة. شكرًا لدعمك!'})
 
+    # Handle poll voting on public-friendly URL
+    if request.method == 'POST' and request.POST.get('action') == 'vote':
+        try:
+            poll_id = request.POST.get('poll_id')
+            option_index_raw = request.POST.get('option_index')
+            voter_name = request.POST.get('voter_name', '').strip()
+            voter_phone = request.POST.get('voter_phone', '').strip()
+
+            if not (poll_id and option_index_raw and voter_name and voter_phone):
+                return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
+
+            phone_clean = (voter_phone or '').strip()
+            if not (phone_clean.isdigit() and len(phone_clean) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+
+            try:
+                selected_index = int(option_index_raw)
+            except Exception:
+                return JsonResponse({'success': False, 'message': 'خيار التصويت غير صالح'})
+
+            poll = Poll.objects.get(id=poll_id, candidate=candidate)
+            if selected_index < 0 or selected_index >= len(poll.options or []):
+                return JsonResponse({'success': False, 'message': 'خيار التصويت غير موجود'})
+
+            temp_bot = Bot.objects.first()
+            if not temp_bot:
+                return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
+
+            bot_user, _ = BotUser.objects.get_or_create(
+                bot=temp_bot,
+                phone_number=voter_phone,
+                defaults={
+                    'first_name': voter_name.split()[0] if voter_name.split() else voter_name,
+                    'last_name': ' '.join(voter_name.split()[1:]) if len(voter_name.split()) > 1 else '',
+                    'telegram_id': hash(voter_phone + voter_name) % 1000000000,
+                }
+            )
+
+            existing_response = PollResponse.objects.filter(poll=poll, bot_user=bot_user).first()
+            if existing_response:
+                return JsonResponse({'success': False, 'message': 'لقد قمت بالتصويت من قبل باستخدام هذا الرقم.'})
+
+            PollResponse.objects.create(
+                poll=poll,
+                bot_user=bot_user,
+                selected_options=[selected_index],
+            )
+            return JsonResponse({'success': True, 'message': 'تم تسجيل تصويتك بنجاح!'})
+        except Poll.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'خطأ: استطلاع غير صحيح'})
+        except Exception as ex:
+            logger.exception('vote error (by_name): %s', ex)
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء إرسال التصويت. يرجى المحاولة مرة أخرى.'})
+
     # Reuse landing logic data
     events = Event.objects.filter(candidate=candidate, is_public=True).order_by('-start_datetime')[:5]
     supporters_count = Supporter.objects.filter(candidate=candidate).count()
