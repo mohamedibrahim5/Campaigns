@@ -782,6 +782,8 @@
         .social-btn.twitter { background: #1da1f2; }
         .social-btn.instagram { background: #e4405f; }
         .social-btn.linkedin { background: #0077b5; }
+        .social-btn.youtube { background: #ff0000; }
+        .social-btn.tiktok { background: #000000; }
 
         /* Stats Section */
         .stats-grid {
@@ -1313,13 +1315,24 @@
                     <div class="events-grid">
                         {% for event in events %}
                         <div class="event-card" onclick="openEventModal('{{ event.id }}')">
-                            <div class="event-title">{{ event.title }}</div>
-                            <div class="event-meta">
-                                📅 {{ event.start_datetime|date:"M d, Y" }} في {{ event.start_datetime|time:"g:i A" }}<br>
-                                📍 {{ event.location }}<br>
-                                🏷️ {{ event.get_event_type_display }}
+                            <div style="display:flex; gap:12px; align-items:flex-start;">
+                                {% if event.image %}
+                                <div style="flex:0 0 200px; max-width:200px;">
+                                    <img src="{{ event.image.url }}" alt="{{ event.title }}" loading="lazy" style="display:block; width:200px; height:auto; object-fit:contain; border-radius:10px; border:1px solid #e9ecef; background:#fff;">
+                                </div>
+                                {% else %}
+                                <div style="flex:0 0 200px; max-width:200px; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; border:1px dashed #e2e8f0; border-radius:10px;">—</div>
+                                {% endif %}
+                                <div style="flex:1; min-width:0;">
+                                    <div class="event-title">{{ event.title }}</div>
+                                    <div class="event-meta">
+                                        📅 {{ event.start_datetime|date:"M d, Y" }} في {{ event.start_datetime|time:"g:i A" }}<br>
+                                        📍 {{ event.location }}<br>
+                                        🏷️ {{ event.get_event_type_display }}
+                                    </div>
+                                    <div class="event-description">{{ event.description|truncatewords:20 }}</div>
+                                </div>
                             </div>
-                            <div class="event-description">{{ event.description|truncatewords:20 }}</div>
                         </div>
                         {% endfor %}
                     </div>
@@ -1606,10 +1619,10 @@
                         📱 <a href="tel:{{ candidate.phone }}">{{ candidate.phone }}</a>
                     </div>
                     {% endif %}
-                    <!-- {% if candidate.website %}
+                    {% if candidate.website %}
                     <div class="contact-item">
                         🌐 <a href="{{ candidate.website }}" target="_blank">الموقع الرسمي</a>
-                    </div> -->
+                    </div>
                     {% endif %}
                 </div>
                 
@@ -1626,6 +1639,12 @@
                     {% endif %}
                     {% if candidate.social_media.linkedin %}
                     <a href="{{ candidate.social_media.linkedin }}" class="social-btn linkedin" target="_blank">in</a>
+                    {% endif %}
+                    {% if candidate.social_media.youtube %}
+                    <a href="{{ candidate.social_media.youtube }}" class="social-btn youtube" target="_blank">▶</a>
+                    {% endif %}
+                    {% if candidate.social_media.tiktok %}
+                    <a href="{{ candidate.social_media.tiktok }}" class="social-btn tiktok" target="_blank">♫</a>
                     {% endif %}
                 </div>
                 {% endif %}

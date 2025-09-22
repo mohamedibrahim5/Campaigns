@@ -2160,6 +2160,10 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
                 social_media['instagram'] = request.POST.get('instagram')
             if request.POST.get('linkedin'):
                 social_media['linkedin'] = request.POST.get('linkedin')
+            if request.POST.get('youtube'):
+                social_media['youtube'] = request.POST.get('youtube')
+            if request.POST.get('tiktok'):
+                social_media['tiktok'] = request.POST.get('tiktok')
             candidate.social_media = social_media
             
             candidate.save()
@@ -2209,6 +2213,28 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
                 event.image = request.FILES['event_image']
                 event.save()
         
+        elif action == 'update_event':
+            # Handle event update
+            event_id = request.POST.get('event_id')
+            try:
+                event = Event.objects.get(id=event_id, candidate=candidate)
+            except Event.DoesNotExist:
+                messages.error(request, 'الفعالية غير موجودة')
+            else:
+                event.title = request.POST.get('event_title', event.title)
+                event.description = request.POST.get('event_description', event.description)
+                event.event_type = request.POST.get('event_type', event.event_type)
+                event.location = request.POST.get('event_location', event.location)
+                event.start_datetime = request.POST.get('event_start_datetime') or event.start_datetime
+                event.end_datetime = request.POST.get('event_end_datetime') or None
+                event.is_public = request.POST.get('event_is_public') == 'on' if 'event_is_public' in request.POST else event.is_public
+                max_att = request.POST.get('event_max_attendees')
+                event.max_attendees = int(max_att) if (max_att or '').isdigit() else None
+                if 'event_image' in request.FILES:
+                    event.image = request.FILES['event_image']
+                event.save()
+                messages.success(request, 'تم تحديث الفعالية بنجاح')
+
         elif action == 'add_speech':
             # Handle new speech creation (align with model fields)
             Speech.objects.create(
@@ -2218,6 +2244,20 @@ def candidate_dashboard(request: HttpRequest, candidate_id: str) -> HttpResponse
                 full_speech=request.POST.get('speech_content', '').strip(),
                 summary=request.POST.get('speech_summary', '').strip(),
             )
+
+        elif action == 'update_speech':
+            # Handle speech update
+            speech_id = request.POST.get('speech_id')
+            try:
+                speech = Speech.objects.get(id=speech_id, candidate=candidate)
+            except Speech.DoesNotExist:
+                messages.error(request, 'الخطاب غير موجود')
+            else:
+                speech.title = (request.POST.get('speech_title') or speech.title).strip()
+                speech.full_speech = (request.POST.get('speech_content') or speech.full_speech).strip()
+                speech.summary = (request.POST.get('speech_summary') or speech.summary).strip()
+                speech.save()
+                messages.success(request, 'تم تحديث الخطاب بنجاح')
         
         elif action == 'add_poll':
             # Handle new poll creation
