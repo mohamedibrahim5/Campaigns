@@ -1691,6 +1691,12 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
     except Candidate.DoesNotExist:
         return HttpResponse("Candidate not found", status=404)
     
+    # Determine if the request is an AJAX call (Django 4+ removed request.is_ajax())
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
+    )
+
     # Debug CSRF token for development
     if request.method == 'POST':
         print(f"CSRF token from request: {request.POST.get('csrfmiddlewaretoken', 'NOT_FOUND')}")
