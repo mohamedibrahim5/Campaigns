@@ -425,6 +425,25 @@ class PollResponse(models.Model):
         return f"{self.bot_user} responded to {self.poll.title}"
 
 
+class PollVote(models.Model):
+    """Lightweight vote tracking by IP for public poll submissions.
+
+    Used by mobile/public views to prevent duplicate voting from the same IP.
+    """
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name='ip_votes')
+    user_ip = models.GenericIPAddressField()
+    option_index = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['poll', 'user_ip']
+        indexes = [
+            models.Index(fields=['poll', 'user_ip']),
+        ]
+
+    def __str__(self):
+        return f"Vote for {self.poll.title} from {self.user_ip} (opt {self.option_index})"
+
 class Supporter(models.Model):
     """Voter supporters with location data"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -558,6 +577,30 @@ class DailyQuestion(models.Model):
     def __str__(self):
         return f"Q: {self.question[:50]}... - {self.candidate.name}"
 
+
+class Question(models.Model):
+    """Public questions submitted from landing pages (no bot user required).
+
+    This model backs the mobile landing view which collects asker's name,
+    phone, optional national ID, and the question text.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='questions')
+    asker_name = models.CharField(max_length=200)
+    asker_phone = models.CharField(max_length=32)
+    asker_national_id = models.CharField(max_length=32, blank=True, null=True)
+    question_text = models.TextField()
+    is_answered = models.BooleanField(default=False)
+    answer = models.TextField(blank=True, null=True)
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    answered_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.asker_name} – {self.candidate.name}"
 
 class CampaignAnalytics(models.Model):
     """Analytics and metrics for campaigns"""

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ candidate.name }} - المرشح</title>
+    <meta name="description" content="صفحة المرشح {{ candidate.name }} - {{ candidate.position }}">
+    
+    <!-- Favicon -->
+    {% if candidate.logo %}
+        <link rel="icon" href="{{ candidate.logo.url }}" type="image/png">
+    {% endif %}
+    
+    <!-- CSS Variables -->
+    <style>
+        :root {
+            --brand: #667eea;
+            --brand-2: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --border: #e5e7eb;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Mobile-first container */
+        .mobile-container {
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Mobile header */
+        .mobile-header {
+            background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+            padding: 20px 16px;
+            text-align: center;
+            color: white;
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .mobile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid rgba(255,255,255,0.3);
+            margin: 0 auto 20px;
+            display: block;
+        }
+        
+        .mobile-candidate-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-position {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+        
+        .mobile-party {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+        
+        /* Mobile stats */
+        .mobile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .mobile-stat {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 16px 8px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .mobile-stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .mobile-stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+        
+        /* Mobile actions */
+        .mobile-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        
+        .mobile-btn {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        .mobile-btn.primary {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        
+        .mobile-btn.primary:hover {
+            background: #059669;
+        }
+        
+        /* Mobile sections */
+        .mobile-section {
+            background: white;
+            margin: 20px 16px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mobile-section-content {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        
+        /* Mobile gallery */
+        .mobile-gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .mobile-gallery-item {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .mobile-gallery-item img,
+        .mobile-gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .mobile-gallery-item .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        /* Mobile polls */
+        .mobile-poll {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .mobile-poll-question {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .mobile-poll-option {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-poll-option:hover {
+            border-color: var(--brand);
+            background: #f8faff;
+        }
+        
+        .mobile-poll-option.selected {
+            border-color: var(--brand);
+            background: var(--brand);
+            color: white;
+        }
+        
+        /* Mobile events */
+        .mobile-event {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .mobile-event-date {
+            background: var(--brand);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        
+        .mobile-event-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .mobile-event-location {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Mobile testimonials */
+        .mobile-testimonial {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--brand);
+        }
+        
+        .mobile-testimonial-text {
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+        
+        .mobile-testimonial-author {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Mobile footer */
+        .mobile-footer {
+            background: var(--text-primary);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+        }
+        
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .mobile-container {
+                max-width: 480px;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Loading animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        /* Form styles */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--brand);
+        }
+        
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .submit-btn {
+            background: var(--brand);
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            background: var(--brand-2);
+        }
+        
+        .submit-btn:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <!-- Mobile Header -->
+        <div class="mobile-header fade-in">
+            {% if candidate.profile_image %}
+                <img src="{{ candidate.profile_image.url }}" alt="{{ candidate.name }}" class="mobile-avatar">
+            {% else %}
+                <div class="mobile-avatar" style="background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
+                    {{ candidate.name|first }}
+                </div>
+            {% endif %}
+            
+            <h1 class="mobile-candidate-name">{{ candidate.name }}</h1>
+            <div class="mobile-position">{{ candidate.position }}</div>
+            {% if candidate.party %}
+                <div class="mobile-party">{{ candidate.party }}</div>
+            {% endif %}
+            
+            <!-- Mobile Stats -->
+            <div class="mobile-stats">
+                <div class="mobile-stat">
+                    <span class="mobile-stat-number">{{ supporters_count }}</span>
+                    <span class="mobile-stat-label">مؤيد</span>
+                </div>
+                <div class="mobile-stat">
+                    <span class="mobile-stat-number">{{ questions_count }}</span>
+                    <span class="mobile-stat-label">سؤال</span>
+                </div>
+                <div class="mobile-stat">
+                    <span class="mobile-stat-number">{{ events_count }}</span>
+                    <span class="mobile-stat-label">فعالية</span>
+                </div>
+            </div>
+            
+            <!-- Mobile Actions -->
+            <div class="mobile-actions">
+                <a href="#" onclick="openSupportModal(); return false;" class="mobile-btn primary">
+                    <span>💪</span>
+                    <span>دعم المرشح</span>
+                </a>
+                <a href="#" onclick="openAskModal(); return false;" class="mobile-btn">
+                    <span>❓</span>
+                    <span>اسأل سؤالاً</span>
+                </a>
+                {% if candidate_bot %}
+                <a href="{{ candidate_bot.bot_link|default:'#' }}" class="mobile-btn" target="_blank">
+                    <span>🤖</span>
+                    <span>تابع البوت</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Bio Section -->
+        {% if candidate.bio and candidate.bio|length > 10 %}
+        <div class="mobile-section fade-in">
+            <h2 class="mobile-section-title">
+                <span>📖</span>
+                <span>نبذة عن المرشح</span>
+            </h2>
+            <div class="mobile-section-content">
+                {{ candidate.bio|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Program Section -->
+        {% if candidate.program and candidate.program|length > 20 %}
+        <div class="mobile-section fade-in">
+            <h2 class="mobile-section-title">
+                <span>📋</span>
+                <span>البرنامج الانتخابي</span>
+            </h2>
+            <div class="mobile-section-content">
+                {{ candidate.program|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Gallery Section -->
+        {% if gallery_items %}
+        <div class="mobile-section fade-in">
+            <h2 class="mobile-section-title">
+                <span>🖼️</span>
+                <span>معرض الوسائط</span>
+            </h2>
+            <div class="mobile-gallery">
+                {% for item in gallery_items|slice:":6" %}
+                <div class="mobile-gallery-item" onclick="openGalleryModal('{{ item.id }}')">
+                    {% if item.media_type == 'image' %}
+                        <img src="{{ item.file.url }}" alt="{{ item.title }}" loading="lazy">
+                    {% elif item.media_type == 'video' %}
+                        <video playsinline webkit-playsinline preload="metadata" muted>
+                            <source src="{{ item.file.url }}" type="video/mp4">
+                        </video>
+                        <div class="play-overlay">▶️</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Polls Section -->
+        {% if polls %}
+        <div class="mobile-section fade-in">
+            <h2 class="mobile-section-title">
+                <span>🗳️</span>
+                <span>الاستطلاعات</span>
+            </h2>
+            {% for poll in polls %}
+            <div class="mobile-poll">
+                <div class="mobile-poll-question">{{ poll.question }}</div>
+                <form method="post" onsubmit="submitPoll(event, {{ poll.id }})">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="poll">
+                    <input type="hidden" name="poll_id" value="{{ poll.id }}">
+                    {% for option in poll.options_with_counts %}
+                    <label class="mobile-poll-option" onclick="selectPollOption(this, {{ option.index }})">
+                        <input type="radio" name="selected_option" value="{{ option.index }}" style="display: none;">
+                        <span>{{ option.text }}</span>
+                        {% if poll.user_has_voted %}
+                            <small style="float: left; opacity: 0.7;">{{ option.count }} صوت</small>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                    {% if not poll.user_has_voted %}
+                    <button type="submit" class="submit-btn">تصويت</button>
+                    {% endif %}
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Events Section -->
+        {% if events %}
+        <div class="mobile-section fade-in">
+            <h2 class="mobile-section-title">
+                <span>📅</span>
+                <span>الفعاليات</span>
+            </h2>
+            {% for event in events|slice:":5" %}
+            <div class="mobile-event">
+                <div class="mobile-event-date">{{ event.start_datetime|date:"M d" }}</div>
+                <div class="mobile-event-title">{{ event.title }}</div>
+                {% if event.location %}
+                <div class="mobile-event-location">📍 {{ event.location }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Testimonials Section -->
+        {% if testimonials %}
+        <div class="mobile-section fade-in">
+            <h2 class="mobile-section-title">
+                <span>💬</span>
+                <span>شهادات الدعم</span>
+            </h2>
+            {% for testimonial in testimonials|slice:":3" %}
+            <div class="mobile-testimonial">
+                <div class="mobile-testimonial-text">"{{ testimonial.content }}"</div>
+                <div class="mobile-testimonial-author">- {{ testimonial.author_name }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Mobile Footer -->
+        <div class="mobile-footer">
+            <p>تم التطوير بواسطة منصة الحملة</p>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 8px;">جميع الحقوق محفوظة</p>
+            {% if candidate.website %}
+            <a href="{{ candidate.website }}" target="_blank" style="color: #667eea; text-decoration: none; margin-top: 8px; display: inline-block;">الموقع الرسمي</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Support Modal -->
+    <div id="supportModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeSupportModal()">&times;</button>
+            <h2 class="modal-title">💪 دعم المرشح</h2>
+            <form method="post" id="supportForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="support">
+                <div class="form-group">
+                    <label class="form-label">الاسم الكامل *</label>
+                    <input type="text" name="user_name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">رقم الهاتف *</label>
+                    <input type="tel" name="user_phone" class="form-input" required minlength="11" maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الرقم القومي *</label>
+                    <input type="text" name="user_national_id" class="form-input" required minlength="14" maxlength="14">
+                </div>
+                <button type="submit" class="submit-btn">تأكيد الدعم</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Ask Modal -->
+    <div id="askModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeAskModal()">&times;</button>
+            <h2 class="modal-title">❓ اسأل المرشح</h2>
+            <form method="post" id="askForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="ask">
+                <div class="form-group">
+                    <label class="form-label">الاسم الكامل *</label>
+                    <input type="text" name="asker_name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">رقم الهاتف *</label>
+                    <input type="tel" name="asker_phone" class="form-input" required minlength="11" maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">سؤالك *</label>
+                    <textarea name="question_text" class="form-input form-textarea" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">إرسال السؤال</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Gallery Modal -->
+    <div id="galleryModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeGalleryModal()">&times;</button>
+            <h2 class="modal-title" id="galleryTitle">معرض الوسائط</h2>
+            <div id="galleryContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        // CSRF Token
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+        
+        // Modal functions
+        function openSupportModal() {
+            document.getElementById('supportModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeSupportModal() {
+            document.getElementById('supportModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        function openAskModal() {
+            document.getElementById('askModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeAskModal() {
+            document.getElementById('askModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        function openGalleryModal(itemId) {
+            const modal = document.getElementById('galleryModal');
+            const titleEl = document.getElementById('galleryTitle');
+            const contentEl = document.getElementById('galleryContent');
+            
+            // Get gallery data (you'll need to implement this based on your data structure)
+            const galleryData = getGalleryData(itemId);
+            
+            if (galleryData) {
+                titleEl.textContent = galleryData.title;
+                if (galleryData.media_type === 'image') {
+                    contentEl.innerHTML = `<img src="${galleryData.url}" alt="${galleryData.title}" style="width:100%; border-radius:12px;">`;
+                } else if (galleryData.media_type === 'video') {
+                    contentEl.innerHTML = `
+                        <video controls playsinline webkit-playsinline style="width:100%; border-radius:12px;">
+                            <source src="${galleryData.url}" type="video/mp4">
+                        </video>
+                    `;
+                }
+            }
+            
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeGalleryModal() {
+            document.getElementById('galleryModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        // Poll functions
+        function selectPollOption(element, optionIndex) {
+            // Remove selected class from siblings
+            const siblings = element.parentElement.querySelectorAll('.mobile-poll-option');
+            siblings.forEach(sibling => sibling.classList.remove('selected'));
+            
+            // Add selected class to clicked element
+            element.classList.add('selected');
+            
+            // Set radio button value
+            const radio = element.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+        }
+        
+        function submitPoll(event, pollId) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('تم إرسال تصويتك بنجاح!');
+                    location.reload(); // Refresh to show updated results
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء إرسال التصويت');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء إرسال التصويت');
+            });
+        }
+        
+        // Form submissions
+        document.getElementById('supportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('تم تسجيل دعمك بنجاح!');
+                    closeSupportModal();
+                    this.reset();
+                    // Update supporters count
+                    location.reload();
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء إرسال الدعم');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء إرسال الدعم');
+            });
+        });
+        
+        document.getElementById('askForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('تم إرسال سؤالك بنجاح!');
+                    closeAskModal();
+                    this.reset();
+                    // Update questions count
+                    location.reload();
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء إرسال السؤال');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء إرسال السؤال');
+            });
+        });
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Gallery data function (implement based on your data structure)
+        function getGalleryData(itemId) {
+            // This should return gallery item data based on itemId
+            // You'll need to implement this based on your backend data
+            return null;
+        }
+        
+        // Add fade-in animation to sections on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Observe all sections
+        document.querySelectorAll('.mobile-section').forEach(section => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(30px)';
+            section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>

@@ -30,6 +30,7 @@ from .views import (
     election_dashboard,
     public_landing,
     candidate_landing,
+    candidate_landing_mobile,
     candidate_login,
     candidate_login_simple,
     candidate_dashboard,
@@ -82,6 +83,7 @@ urlpatterns = [
     
     # Candidate landing pages (must come after the non-parameterized routes above)
     path('candidate/<str:candidate_id>/', candidate_landing, name='candidate_landing'),
+    path('candidate/<str:candidate_id>/mobile/', candidate_landing_mobile, name='candidate_landing_mobile'),
     path('candidate/<str:candidate_id>/support/', candidate_support, name='candidate_support'),
     path('candidate/<str:candidate_id>/ask/', candidate_ask, name='candidate_ask'),
     path('candidate/<str:candidate_id>/login/', candidate_login, name='candidate_login'),
@@ -89,4 +91,6 @@ urlpatterns = [
     
     # User profile (redirects to election dashboard)
     path('profile/', user_profile, name='user_profile'),
+    
+    # Direct mobile landing page for ahmed
 ]

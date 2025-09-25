@@ -11,7 +11,7 @@ from django.contrib import messages
 from .models import (
     Bot, Campaign, CampaignAssignment, BotUser, SendLog, WebhookEvent, MessageLog,
     Candidate, CandidateUser, Gallery, Event, EventAttendance, Speech, Poll, PollResponse, Supporter, 
-    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics
+    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics, Question, PollVote, Testimonial
 )
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -1698,76 +1698,125 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
     
     # Handle support button click
     if request.method == 'POST' and request.POST.get('action') == 'support':
-        # Get user data from request
-        user_name = request.POST.get('user_name', '').strip()
-        user_phone = request.POST.get('user_phone', '').strip()
-        user_national_id = request.POST.get('user_national_id', '').strip()
-        user_email = request.POST.get('user_email', '').strip()
-        user_city = request.POST.get('user_city', '').strip()
-        support_level_str = request.POST.get('support_level', 'supporter')
-        # Convert support level string to integer
-        support_level_map = {
-            'supporter': 1,
-            'volunteer': 2,
-            'donor': 3
-        }
-        support_level = support_level_map.get(support_level_str, 1)
-        
-        # Create a temporary BotUser for supporters (or find existing one)
-        # For now, we'll create a simple supporter record
-        if user_name and user_phone and user_national_id:
-            # Validate national id: exactly 14 digits
-            nat = (user_national_id or '').strip()
-            if not (nat.isdigit() and len(nat) == 14):
-                return JsonResponse({'success': False, 'message': 'الرقم القومي غير صالح. يجب أن يكون 14 رقمًا.'})
-            # Validate phone: exactly 11 digits
-            ph = (user_phone or '').strip()
-            if not (ph.isdigit() and len(ph) == 11):
-                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
-            # Check if supporter already exists (by phone)
-            existing_supporter = Supporter.objects.filter(
-                candidate=candidate,
-                bot_user__phone_number=ph
-            ).first()
-            # Also check by national id via notes string since we don't have a dedicated column
-            existing_by_national = Supporter.objects.filter(
-                candidate=candidate,
-                notes__icontains=user_national_id
-            ).first()
+        try:
+            # Get user data from request
+            user_name = request.POST.get('user_name', '').strip()
+            user_phone = request.POST.get('user_phone', '').strip()
+            user_national_id = request.POST.get('user_national_id', '').strip()
+            user_email = request.POST.get('user_email', '').strip()
+            user_city = request.POST.get('user_city', '').strip()
+            support_level_str = request.POST.get('support_level', 'supporter')
+            # Convert support level string to integer
+            support_level_map = {
+                'supporter': 1,
+                'volunteer': 2,
+                'donor': 3
+            }
+            support_level = support_level_map.get(support_level_str, 1)
             
-            if not existing_supporter and not existing_by_national:
-                # Create a temporary BotUser for this supporter
-                temp_bot = Bot.objects.first()  # Use first available bot
-                if temp_bot:
-                    bot_user, created = BotUser.objects.get_or_create(
-                        bot=temp_bot,
-                        phone_number=ph,
-                        defaults={
-                            'first_name': user_name.split()[0] if user_name.split() else user_name,
-                            'last_name': ' '.join(user_name.split()[1:]) if len(user_name.split()) > 1 else '',
-                            'telegram_id': hash(user_national_id) % 1000000000,  # Generate unique ID from national ID
-                        }
-                    )
-                    
-                    # Create supporter record
-                    Supporter.objects.create(
-                        candidate=candidate,
-                        bot_user=bot_user,
-                        city=user_city,
-                        support_level=support_level,
-                        notes=f"Supporter from landing page - Email: {user_email}, National ID: {user_national_id}"
-                    )
-                    
-                    # Return success response for AJAX
-                    return JsonResponse({'success': True, 'message': 'تم تسجيل دعمك بنجاح!'})
+            if user_name and user_phone and user_national_id:
+                nat = (user_national_id or '').strip()
+                if not (nat.isdigit() and len(nat) == 14):
+                    return JsonResponse({'success': False, 'message': 'الرقم القومي غير صالح. يجب أن يكون 14 رقمًا.'})
+                ph = (user_phone or '').strip()
+                if not (ph.isdigit() and len(ph) == 11):
+                    return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+                existing_supporter = Supporter.objects.filter(
+                    candidate=candidate,
+                    bot_user__phone_number=ph
+                ).first()
+                existing_by_national = Supporter.objects.filter(
+                    candidate=candidate,
+                    notes__icontains=user_national_id
+                ).first()
+                if not existing_supporter and not existing_by_national:
+                    temp_bot = Bot.objects.first()
+                    if not temp_bot:
+                        try:
+                            import uuid as _uuid
+                            temp_bot = Bot.objects.create(name='Default Bot', token=str(_uuid.uuid4()), is_active=False)
+                        except Exception:
+                            temp_bot = None
+                    if temp_bot:
+                        bot_user, created = BotUser.objects.get_or_create(
+                            bot=temp_bot,
+                            phone_number=ph,
+                            defaults={
+                                'first_name': user_name.split()[0] if user_name.split() else user_name,
+                                'last_name': ' '.join(user_name.split()[1:]) if len(user_name.split()) > 1 else '',
+                                'telegram_id': hash(user_national_id) % 1000000000,
+                            }
+                        )
+                        Supporter.objects.create(
+                            candidate=candidate,
+                            bot_user=bot_user,
+                            city=user_city,
+                            support_level=support_level,
+                            notes=f"Supporter from landing page - Email: {user_email}, National ID: {user_national_id}"
+                        )
+                        return JsonResponse({'success': True, 'message': 'تم تسجيل دعمك بنجاح!'})
+                    else:
+                        return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
                 else:
-                    return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
+                    if existing_supporter:
+                        return JsonResponse({'success': False, 'message': 'هذا الرقم مسجل كمؤيد بالفعل لهذا المرشح.'})
+                    return JsonResponse({'success': False, 'message': 'الرقم القومي مسجل مسبقًا لهذا المرشح.'})
             else:
-                if existing_supporter:
-                    return JsonResponse({'success': False, 'message': 'هذا الرقم مسجل كمؤيد بالفعل لهذا المرشح.'})
-                return JsonResponse({'success': False, 'message': 'الرقم القومي مسجل مسبقًا لهذا المرشح.'})
-        else:
-            return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
+                return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
+        except Exception as ex:
+            logger.exception('landing support error: %s', ex)
+            try:
+                from django.conf import settings as _settings
+                debug_msg = f" (تفاصيل: {ex})" if getattr(_settings, 'DEBUG', False) else ''
+            except Exception:
+                debug_msg = ''
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء تسجيل الدعم. يرجى المحاولة مرة أخرى.' + debug_msg})
+
+    # Handle Ask-the-Candidate on landing (modal posts here)
+    if request.method == 'POST' and request.POST.get('action') == 'ask':
+        try:
+            asker_name = (request.POST.get('asker_name') or '').strip()
+            asker_phone = (request.POST.get('asker_phone') or '').strip()
+            asker_national_id = (request.POST.get('asker_national_id') or '').strip()
+            question_text = (request.POST.get('question_text') or '').strip()
+
+            if not (asker_name and asker_phone and question_text):
+                return JsonResponse({'success': False, 'message': 'يرجى ملء الاسم والهاتف والسؤال'})
+            if not (asker_phone.isdigit() and len(asker_phone) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+
+            temp_bot = Bot.objects.first()
+            if not temp_bot:
+                try:
+                    import uuid as _uuid
+                    temp_bot = Bot.objects.create(name='Default Bot', token=str(_uuid.uuid4()), is_active=False)
+                except Exception:
+                    temp_bot = None
+            if not temp_bot:
+                return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
+
+            bot_user, _ = BotUser.objects.get_or_create(
+                bot=temp_bot,
+                phone_number=asker_phone,
+                defaults={
+                    'first_name': asker_name.split()[0] if asker_name.split() else asker_name,
+                    'last_name': ' '.join(asker_name.split()[1:]) if len(asker_name.split()) > 1 else '',
+                    'telegram_id': hash(asker_phone + asker_name) % 1000000000,
+                }
+            )
+            meta_suffix = ''
+            if asker_phone or asker_national_id:
+                meta_suffix = f"\n— الهاتف: {asker_phone}{' — الرقم القومي: ' + asker_national_id if asker_national_id else ''}"
+            DailyQuestion.objects.create(
+                candidate=candidate,
+                bot_user=bot_user,
+                question=f"{question_text}{meta_suffix}",
+                is_public=False,
+            )
+            return JsonResponse({'success': True, 'message': 'تم إرسال سؤالك بنجاح!'})
+        except Exception as ex:
+            logger.exception('landing ask error: %s', ex)
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء إرسال السؤال. يرجى المحاولة مرة أخرى.'})
     
     # Handle adding testimonial (public)
     if request.method == 'POST' and request.POST.get('action') == 'add_testimonial':
@@ -1896,6 +1945,152 @@ def candidate_landing(request: HttpRequest, candidate_id: str) -> HttpResponse:
     return render(request, 'hub/candidate_landing.html', context)
 
 
+def candidate_landing_mobile(request: HttpRequest, candidate_id: str) -> HttpResponse:
+    """Mobile-optimized candidate landing page"""
+    try:
+        candidate = Candidate.objects.get(id=candidate_id, is_active=True)
+    except Candidate.DoesNotExist:
+        return HttpResponse("Candidate not found", status=404)
+    
+    # Debug CSRF token for development
+    if request.method == 'POST':
+        print(f"CSRF token from request: {request.POST.get('csrfmiddlewaretoken', 'NOT_FOUND')}")
+        print(f"CSRF token from headers: {request.META.get('HTTP_X_CSRFTOKEN', 'NOT_FOUND')}")
+    
+    # Handle support button click
+    if request.method == 'POST' and request.POST.get('action') == 'support':
+        try:
+            # Get user data from request
+            user_name = request.POST.get('user_name', '').strip()
+            user_phone = request.POST.get('user_phone', '').strip()
+            user_national_id = request.POST.get('user_national_id', '').strip()
+            user_email = request.POST.get('user_email', '').strip()
+            user_city = request.POST.get('user_city', '').strip()
+            support_level = request.POST.get('support_level', '').strip()
+            
+            # Validation
+            if not (user_name and user_phone and user_national_id):
+                return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
+            
+            if not (user_phone.isdigit() and len(user_phone) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+            
+            if not (user_national_id.isdigit() and len(user_national_id) == 14):
+                return JsonResponse({'success': False, 'message': 'الرقم القومي غير صالح. يجب أن يكون 14 رقمًا.'})
+            
+            # Create supporter
+            supporter = Supporter.objects.create(
+                candidate=candidate,
+                name=user_name,
+                phone_number=user_phone,
+                national_id=user_national_id,
+                email=user_email or None,
+                city=user_city or None,
+                support_level=support_level or 'supporter'
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'تم تسجيل دعمك بنجاح! مرحباً بك في فريق دعم {candidate.name}'
+            })
+            
+        except Exception as e:
+            print(f"Error creating supporter: {e}")
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء تسجيل الدعم. يرجى المحاولة مرة أخرى.'})
+    
+    # Handle ask question
+    elif request.method == 'POST' and request.POST.get('action') == 'ask':
+        try:
+            asker_name = request.POST.get('asker_name', '').strip()
+            asker_phone = request.POST.get('asker_phone', '').strip()
+            asker_national_id = request.POST.get('asker_national_id', '').strip()
+            question_text = request.POST.get('question_text', '').strip()
+            
+            if not (asker_name and asker_phone and question_text):
+                return JsonResponse({'success': False, 'message': 'يرجى ملء الاسم والهاتف والسؤال'})
+            
+            if not (asker_phone.isdigit() and len(asker_phone) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+            
+            # Create question
+            question = Question.objects.create(
+                candidate=candidate,
+                asker_name=asker_name,
+                asker_phone=asker_phone,
+                asker_national_id=asker_national_id or None,
+                question_text=question_text
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'تم إرسال سؤالك بنجاح! سنتواصل معك قريباً للإجابة على سؤالك.'
+            })
+            
+        except Exception as e:
+            print(f"Error creating question: {e}")
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء إرسال السؤال. يرجى المحاولة مرة أخرى.'})
+    
+    # Handle poll voting
+    elif request.method == 'POST' and request.POST.get('action') == 'poll':
+        try:
+            poll_id = request.POST.get('poll_id')
+            selected_option = request.POST.get('selected_option')
+            
+            if not (poll_id and selected_option):
+                return JsonResponse({'success': False, 'message': 'يرجى اختيار خيار للتصويت'})
+            
+            poll = Poll.objects.get(id=poll_id, candidate=candidate)
+            
+            # Check if user already voted (simple check by IP)
+            user_ip = request.META.get('REMOTE_ADDR', '')
+            if PollVote.objects.filter(poll=poll, user_ip=user_ip).exists():
+                return JsonResponse({'success': False, 'message': 'لقد قمت بالتصويت مسبقاً في هذا الاستطلاع'})
+            
+            # Create vote
+            PollVote.objects.create(
+                poll=poll,
+                option_index=int(selected_option),
+                user_ip=user_ip
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'message': 'تم إرسال تصويتك بنجاح!'
+            })
+            
+        except Poll.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'الاستطلاع غير موجود'})
+        except Exception as e:
+            print(f"Error creating poll vote: {e}")
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء إرسال التصويت. يرجى المحاولة مرة أخرى.'})
+    
+    # Get data for template
+    supporters_count = Supporter.objects.filter(candidate=candidate).count()
+    questions_count = Question.objects.filter(candidate=candidate).count()
+    polls = Poll.objects.filter(candidate=candidate, is_active=True).order_by('-created_at')[:3]
+    events = Event.objects.filter(candidate=candidate, is_public=True).order_by('-start_datetime')[:5]
+    gallery_items = Gallery.objects.filter(candidate=candidate, is_public=True).order_by('-created_at')[:12]
+    testimonials = Testimonial.objects.filter(candidate=candidate, is_public=True).order_by('-created_at')[:5]
+    events_count = events.count()
+    
+    # Get candidate bot
+    candidate_bot = candidate.bot if (getattr(candidate, 'bot', None) and candidate.bot.is_active) else None
+    
+    context = {
+        'candidate': candidate,
+        'supporters_count': supporters_count,
+        'questions_count': questions_count,
+        'events_count': events_count,
+        'polls': polls,
+        'events': events,
+        'candidate_bot': candidate_bot,
+        'gallery_items': gallery_items,
+        'testimonials': testimonials,
+    }
+    return render(request, 'hub/candidate_landing_mobile.html', context)
+
+
+@csrf_exempt
 def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> HttpResponse:
     """Public friendly URL: /<candidate_name> → candidate landing.
     Supports URL-encoded Arabic names. Matches active candidates by exact name.
@@ -1910,6 +2105,107 @@ def candidate_landing_by_name(request: HttpRequest, candidate_name: str) -> Http
             return HttpResponse("Candidate not found", status=404)
     except Exception:
         return HttpResponse("Candidate not found", status=404)
+
+    # Handle Ask-the-Candidate on public-friendly URL
+    if request.method == 'POST' and request.POST.get('action') == 'ask':
+        try:
+            asker_name = (request.POST.get('asker_name') or '').strip()
+            asker_phone = (request.POST.get('asker_phone') or '').strip()
+            asker_national_id = (request.POST.get('asker_national_id') or '').strip()
+            question_text = (request.POST.get('question_text') or '').strip()
+
+            if not (asker_name and asker_phone and question_text):
+                return JsonResponse({'success': False, 'message': 'يرجى ملء الاسم والهاتف والسؤال'})
+            if not (asker_phone.isdigit() and len(asker_phone) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+
+            temp_bot = Bot.objects.first()
+            if not temp_bot:
+                try:
+                    import uuid as _uuid
+                    temp_bot = Bot.objects.create(name='Default Bot', token=str(_uuid.uuid4()), is_active=False)
+                except Exception:
+                    temp_bot = None
+            if not temp_bot:
+                return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
+
+            bot_user, _ = BotUser.objects.get_or_create(
+                bot=temp_bot,
+                phone_number=asker_phone,
+                defaults={
+                    'first_name': asker_name.split()[0] if asker_name.split() else asker_name,
+                    'last_name': ' '.join(asker_name.split()[1:]) if len(asker_name.split()) > 1 else '',
+                    'telegram_id': hash(asker_phone + asker_name) % 1000000000,
+                }
+            )
+            meta_suffix = ''
+            if asker_phone or asker_national_id:
+                meta_suffix = f"\n— الهاتف: {asker_phone}{' — الرقم القومي: ' + asker_national_id if asker_national_id else ''}"
+            DailyQuestion.objects.create(
+                candidate=candidate,
+                bot_user=bot_user,
+                question=f"{question_text}{meta_suffix}",
+                is_public=False,
+            )
+            return JsonResponse({'success': True, 'message': 'تم إرسال سؤالك بنجاح!'})
+        except Exception as ex:
+            logger.exception('landing_by_name ask error: %s', ex)
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء إرسال السؤال. يرجى المحاولة مرة أخرى.'})
+
+    # Handle support submissions (same as candidate_landing)
+    if request.method == 'POST' and request.POST.get('action') == 'support':
+        try:
+            user_name = (request.POST.get('user_name') or '').strip()
+            user_phone = (request.POST.get('user_phone') or '').strip()
+            user_national_id = (request.POST.get('user_national_id') or '').strip()
+            user_email = (request.POST.get('user_email') or '').strip()
+            user_city = (request.POST.get('user_city') or '').strip()
+            support_level_str = (request.POST.get('support_level') or 'supporter').strip()
+            support_level_map = {'supporter': 1, 'volunteer': 2, 'donor': 3}
+            support_level = support_level_map.get(support_level_str, 1)
+
+            if not (user_name and user_phone and user_national_id):
+                return JsonResponse({'success': False, 'message': 'يرجى ملء جميع الحقول المطلوبة'})
+            if not (user_national_id.isdigit() and len(user_national_id) == 14):
+                return JsonResponse({'success': False, 'message': 'الرقم القومي غير صالح. يجب أن يكون 14 رقمًا.'})
+            if not (user_phone.isdigit() and len(user_phone) == 11):
+                return JsonResponse({'success': False, 'message': 'رقم الهاتف غير صالح. يجب أن يكون 11 رقمًا.'})
+
+            existing_supporter = Supporter.objects.filter(candidate=candidate, bot_user__phone_number=user_phone).first()
+            existing_by_national = Supporter.objects.filter(candidate=candidate, notes__icontains=user_national_id).first()
+            if existing_supporter or existing_by_national:
+                return JsonResponse({'success': False, 'message': 'هذا الرقم/الرقم القومي مسجل بالفعل لهذا المرشح.'})
+
+            temp_bot = Bot.objects.first()
+            if not temp_bot:
+                try:
+                    import uuid as _uuid
+                    temp_bot = Bot.objects.create(name='Default Bot', token=str(_uuid.uuid4()), is_active=False)
+                except Exception:
+                    temp_bot = None
+            if not temp_bot:
+                return JsonResponse({'success': False, 'message': 'خطأ: لم يتم العثور على بوت للربط'})
+
+            bot_user, _ = BotUser.objects.get_or_create(
+                bot=temp_bot,
+                phone_number=user_phone,
+                defaults={
+                    'first_name': user_name.split()[0] if user_name.split() else user_name,
+                    'last_name': ' '.join(user_name.split()[1:]) if len(user_name.split()) > 1 else '',
+                    'telegram_id': hash(user_national_id) % 1000000000,
+                }
+            )
+            Supporter.objects.create(
+                candidate=candidate,
+                bot_user=bot_user,
+                city=user_city,
+                support_level=support_level,
+                notes=f"Supporter from public page - Email: {user_email}, National ID: {user_national_id}"
+            )
+            return JsonResponse({'success': True, 'message': 'تم تسجيل دعمك بنجاح!'})
+        except Exception as ex:
+            logger.exception('landing_by_name support error: %s', ex)
+            return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء تسجيل الدعم. يرجى المحاولة مرة أخرى.'})
 
     # Handle adding testimonial via public URL
     if request.method == 'POST' and request.POST.get('action') == 'add_testimonial':
@@ -2024,12 +2320,16 @@ def candidate_support(request: HttpRequest, candidate_id: str) -> HttpResponse:
         return HttpResponse("Candidate not found", status=404)
 
     if request.method == 'POST' and request.POST.get('action') == 'support':
-        # Minimal server-side validation and creation (mirrors landing logic)
+        # Minimal server-side validation and creation (align with landing logic)
         user_name = request.POST.get('user_name', '').strip()
         user_phone = request.POST.get('user_phone', '').strip()
         user_national_id = request.POST.get('user_national_id', '').strip()
         user_email = request.POST.get('user_email', '').strip()
         user_city = request.POST.get('user_city', '').strip()
+        user_district = (request.POST.get('user_district') or '').strip()
+        support_level_str = (request.POST.get('support_level') or 'supporter').strip()
+        support_level_map = { 'supporter': 1, 'volunteer': 2, 'donor': 3 }
+        support_level = support_level_map.get(support_level_str, 1)
         if not (user_name and user_phone and user_national_id):
             messages.error(request, 'يرجى ملء جميع الحقول المطلوبة')
         elif not (user_phone.isdigit() and len(user_phone) == 11):
@@ -2050,6 +2350,12 @@ def candidate_support(request: HttpRequest, candidate_id: str) -> HttpResponse:
             else:
                 temp_bot = Bot.objects.first()
                 if not temp_bot:
+                    try:
+                        import uuid as _uuid
+                        temp_bot = Bot.objects.create(name='Default Bot', token=str(_uuid.uuid4()), is_active=False)
+                    except Exception:
+                        temp_bot = None
+                if not temp_bot:
                     messages.error(request, 'خطأ: لم يتم العثور على بوت للربط')
                 else:
                     bot_user, _ = BotUser.objects.get_or_create(
@@ -2065,7 +2371,8 @@ def candidate_support(request: HttpRequest, candidate_id: str) -> HttpResponse:
                         candidate=candidate,
                         bot_user=bot_user,
                         city=user_city,
-                        support_level=1,
+                        district=user_district or None,
+                        support_level=support_level,
                         notes=f"Supporter from support page - Email: {user_email}, National ID: {user_national_id}"
                     )
                     messages.success(request, 'تم تسجيل دعمك بنجاح!')
