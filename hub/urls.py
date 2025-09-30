@@ -39,6 +39,8 @@ from .views import (
     candidate_ask,
     user_profile,
     election_360_landing,
+    cv_landing,
+    cv_download,
 )
 
 urlpatterns = [
@@ -75,6 +77,10 @@ urlpatterns = [
     path('election-dashboard/', election_dashboard, name='election_dashboard'),
     path('election-360/', election_360_landing, name='election_360_landing'),
     path('election/', include('hub.election_urls')),
+    
+    # CV / Portfolio
+    path('cv/', cv_landing, name='cv_landing'),
+    path('cv/download/', cv_download, name='cv_download'),
     
     # Public landing page
     path('public/', public_landing, name='public_landing'),

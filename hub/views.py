@@ -20,6 +20,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.http import StreamingHttpResponse
+from django.http import FileResponse
 import mimetypes
 
 # Set up logging
@@ -1706,6 +1707,50 @@ def election_360_landing(request: HttpRequest) -> HttpResponse:
             except Exception:
                 messages.error(request, 'حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى')
     return render(request, 'hub/election_360_landing.html')
+
+
+def cv_landing(request: HttpRequest) -> HttpResponse:
+    """English CV/Projects landing page."""
+    # Curated projects list based on links parsed from CV
+    projects = [
+        { 'name': 'YesCab', 'desc': 'Ride hailing platform for booking rides with live tracking and payments.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.yescab', 'tech': ['Flutter', 'Firebase', 'Stripe'], 'image': None, 'role': 'Mobile Lead' },
+        { 'name': 'Daleel Arab', 'desc': 'A curated Arabic business directory with search, reviews and maps.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.daleel_arab', 'tech': ['Flutter', 'Django', 'PostgreSQL'], 'image': None, 'role': 'Full‑stack' },
+        { 'name': 'DarFarha CRM', 'desc': 'Property CRM app used by sales teams and brokers.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.crm.crm', 'appstore': 'https://apps.apple.com/us/app/darfarha-crm/id1661421723', 'tech': ['Flutter', 'REST'], 'image': '', 'role': 'Mobile Dev' },
+        { 'name': 'Hello Shawarma', 'desc': 'End‑to‑end food ordering for a restaurant brand.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.shawarma&hl=en', 'appstore': 'https://apps.apple.com/eg/app/hello-shawarma/id6541757756', 'tech': ['Flutter', 'Django', 'Stripe'], 'image': None, 'role': 'Full‑stack' },
+        { 'name': 'Rafal', 'desc': 'Real‑estate showcase and bookings.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.rafal', 'appstore': 'https://apps.apple.com/us/app/rafal/id6473119898', 'tech': ['Flutter'], 'image': None, 'role': 'Mobile Dev' },
+        { 'name': 'Smart Savings', 'desc': 'Fintech savings and goals tracking.', 'play': 'https://play.google.com/store/apps/details?id=com.smart_savings.app&hl=en', 'appstore': 'https://apps.apple.com/eg/app/smart-savings/id6448688339', 'tech': ['Flutter', 'Payments'], 'image': None, 'role': 'Mobile Dev' },
+        { 'name': 'Rita Balloon', 'desc': 'Casual mobile game with smooth physics and levels.', 'play': 'https://play.google.com/store/apps/details?id=com.sacred.lotus.rita&hl=en', 'appstore': 'https://apps.apple.com/eg/app/rita-balloon/id6504156036', 'tech': ['Unity/Flutter'], 'image': None, 'role': 'Mobile Dev' },
+        { 'name': 'Grays & Dannys', 'desc': 'Restaurant ordering app with loyalty.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.graysanddannys.grays_and_dannys', 'appstore': 'https://apps.apple.com/us/app/grays-dannys/id6447873266', 'tech': ['Flutter'], 'image': None, 'role': 'Mobile Dev' },
+        { 'name': 'Fekhidmtak', 'desc': 'Utilities companion app for payments and support.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.fekhidmtak', 'appstore': 'https://apps.apple.com/us/app/id6462150909', 'tech': ['Flutter'], 'image': None, 'role': 'Mobile Dev' },
+        { 'name': 'Sharks', 'desc': 'Retail loyalty and coupons app.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.sharks', 'tech': ['Flutter'], 'image': None, 'role': 'Mobile Dev' },
+        { 'name': 'EZAL', 'desc': 'Commerce and catalog browsing.', 'play': 'https://play.google.com/store/apps/details?id=com.cyparta.ezal', 'tech': ['Flutter'], 'image': None, 'role': 'Mobile Dev' },
+        { 'name': 'Bluesky (client)', 'desc': 'Third‑party social client exploration.', 'play': 'https://play.google.com/store/apps/details?id=xyz.blueskyweb.app&hl=en', 'tech': ['Flutter'], 'image': None, 'role': 'Mobile Dev' },
+        # Additional projects without public links
+        { 'name': 'Election 360', 'desc': 'SaaS for election campaigns with bots, dashboards, and analytics.', 'tech': ['Django', 'PostgreSQL', 'Telegram Bot API'], 'image': None, 'role': 'Founder/Engineer' },
+        { 'name': 'Internal CMS', 'desc': 'Lightweight content management for small teams.', 'tech': ['Django', 'HTMX'], 'image': None, 'role': 'Backend' },
+        { 'name': 'Marketing Site Generator', 'desc': 'Static site generator and components library.', 'tech': ['Next.js', 'Tailwind'], 'image': None, 'role': 'Frontend' },
+    ]
+    socials = {
+        'github': 'https://github.com/mohamedibrahim5',
+        'linkedin': 'https://linkedin.com/in/mohamed-ayyad1',
+        'email': 'mohamedibrahimm355@gmail.com',
+    }
+    about = {
+        'title': 'Senior Mobile & Full‑stack Engineer',
+        'summary': 'I build high‑quality mobile apps (Flutter) and pragmatic backends (Django). 10+ shipped apps, production experience with payments, maps, push notifications and analytics.',
+        'location': 'Cairo, Egypt',
+        'availability': 'Open to remote/onsite opportunities',
+        'skills': ['Flutter', 'Dart', 'Android', 'iOS', 'Django', 'PostgreSQL', 'REST', 'Telegram Bots', 'Payments', 'Firebase', 'CI/CD']
+    }
+    return render(request, 'hub/cv_landing.html', {'projects': projects, 'socials': socials, 'about': about})
+
+
+def cv_download(request: HttpRequest) -> FileResponse:
+    """Serve the CV PDF for download."""
+    try:
+        return FileResponse(open('/Users/masarat/Desktop/tg_hub/AyyadCv.pdf', 'rb'), as_attachment=True, filename='Mohamed_Ayyad_CV.pdf')
+    except Exception:
+        return HttpResponse(status=404)
 
 
 @csrf_exempt
