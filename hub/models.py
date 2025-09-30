@@ -616,3 +616,19 @@ class CampaignAnalytics(models.Model):
     def __str__(self):
         return f"Analytics for {self.candidate.name}"
 
+
+# ===== PUBLIC CONTACT/LEADS =====
+class ContactMessage(models.Model):
+    """Lead/contact message submitted from public landing pages."""
+    name = models.CharField(max_length=120)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    message = models.TextField()
+    source_page = models.CharField(max_length=120, default='election_360_landing')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.phone or self.email or 'no contact'}"

@@ -11,7 +11,8 @@ from django.contrib import messages
 from .models import (
     Bot, Campaign, CampaignAssignment, BotUser, SendLog, WebhookEvent, MessageLog,
     Candidate, CandidateUser, Gallery, Event, EventAttendance, Speech, Poll, PollResponse, Supporter, 
-    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics, Question, PollVote, Testimonial
+    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics, Question, PollVote, Testimonial,
+    ContactMessage,
 )
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -1681,6 +1682,30 @@ def public_landing(request: HttpRequest) -> HttpResponse:
         'candidates': candidates,
     }
     return render(request, 'hub/public_landing.html', context)
+
+
+def election_360_landing(request: HttpRequest) -> HttpResponse:
+    """Arabic marketing landing page for the Election 360 product."""
+    if request.method == 'POST':
+        name = (request.POST.get('name') or '').strip()
+        phone = (request.POST.get('phone') or '').strip()
+        email = (request.POST.get('email') or '').strip()
+        message_text = (request.POST.get('message') or '').strip()
+        if not (name and message_text):
+            messages.error(request, 'يرجى إدخال الاسم والرسالة')
+        else:
+            try:
+                ContactMessage.objects.create(
+                    name=name,
+                    phone=phone or None,
+                    email=email or None,
+                    message=message_text,
+                    source_page='election_360_landing',
+                )
+                messages.success(request, 'تم استلام رسالتك، سنعود إليك خلال 24 ساعة')
+            except Exception:
+                messages.error(request, 'حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى')
+    return render(request, 'hub/election_360_landing.html')
 
 
 @csrf_exempt

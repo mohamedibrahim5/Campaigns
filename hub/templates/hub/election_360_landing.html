@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Election 360 - منصة الحملات الانتخابية الشاملة</title>
+    <style>
+        :root { --brand:#1e88e5; --brand-dark:#1565c0; --ink:#0f172a; --muted:#64748b; --bg:#f8fafc; }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg)}
+        a{text-decoration:none;color:inherit}
+        .container{max-width:1100px;margin:0 auto;padding:0 16px}
+        .nav{display:flex;justify-content:space-between;align-items:center;padding:14px 0;position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;z-index:10}
+        .brand{display:flex;gap:10px;align-items:center;font-weight:800;color:var(--brand)}
+        .brand-badge{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));display:grid;place-items:center;color:#fff;font-weight:900}
+        .cta{background:var(--brand);color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;display:inline-block}
+        .cta:hover{background:var(--brand-dark)}
+        .hero{padding:56px 0 24px;background:#fff}
+        .hero h1{font-size:38px;line-height:1.2;margin:8px 0 12px}
+        .hero p{color:var(--muted);font-size:18px;margin:0 0 18px}
+        .grid{display:grid;gap:16px}
+        @media(min-width:768px){.grid.cols-2{grid-template-columns:1fr 1fr}.grid.cols-3{grid-template-columns:repeat(3,1fr)}}
+        .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px}
+        .card h3{margin:0 0 8px;font-size:18px}
+        section{padding:28px 0}
+        .pill{display:inline-block;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+        .muted{color:var(--muted)}
+        .footer{padding:24px 0;border-top:1px solid #e5e7eb;color:var(--muted);font-size:14px;background:#fff}
+        .list{display:grid;gap:12px}
+        .list li{display:flex;gap:8px;align-items:flex-start}
+        .ok{color:#16a34a;font-weight:900}
+        .stats{display:grid;gap:12px}
+        @media(min-width:768px){.stats{grid-template-columns:repeat(4,1fr)}}
+        .stat{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;text-align:center}
+        .big{font-size:28px;font-weight:800;color:var(--brand)}
+        .alert{padding:10px;border-radius:10px;margin-bottom:8px}
+        .alert.success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+        .alert.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+    </style>
+</head>
+<body>
+    <header class="nav container">
+        <div class="brand">
+            <div class="brand-badge">360</div>
+            <span>Election 360</span>
+        </div>
+        <nav style="display:flex;gap:14px;align-items:center">
+            <a href="#services" class="muted">الخدمات</a>
+            <a href="#features" class="muted">المزايا</a>
+            <a href="#contact" class="muted">تواصل معنا</a>
+            <a href="#cta" class="cta">ابدأ الآن</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <span class="pill">منصة عربية لإدارة الحملات الانتخابية</span>
+                <h1>Election 360 — كل ما تحتاجه لنجاح حملتك في مكان واحد</h1>
+                <p>من إنشاء صفحة المرشح وجمع المؤيدين، إلى إدارة الفعاليات، الاستطلاعات، الرسائل الجماعية عبر تيليجرام، ولوحة تحكم شاملة للنتائج.</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <a href="#cta" class="cta">احجز تجربة مجانية</a>
+                    <a href="#services" class="card" style="padding:10px 14px">استكشف الخدمات</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="services">
+            <div class="container">
+                <h2 style="margin:0 0 12px">الخدمات الرئيسية</h2>
+                <p class="muted" style="margin:0 0 16px">حلول متكاملة تدعم حملتك من الألف إلى الياء</p>
+                <div class="grid cols-3">
+                    <div class="card">
+                        <h3>صفحة المرشح</h3>
+                        <p class="muted">صفحة تعريفية أنيقة تدعم العربية، صور، فيديو، برنامج انتخابي، وروابط التواصل.</p>
+                    </div>
+                    <div class="card">
+                        <h3>جمع المؤيدين والمتطوعين</h3>
+                        <p class="muted">نماذج ذكية تتحقق من الهاتف والرقم القومي وتبني قاعدة بيانات دقيقة.</p>
+                    </div>
+                    <div class="card">
+                        <h3>إدارة الفعاليات</h3>
+                        <p class="muted">إنشاء فعاليات عامة/خاصة، تسجيل حضور، وعدّاد المشاركين مع صور.</p>
+                    </div>
+                    <div class="card">
+                        <h3>استطلاعات الرأي</h3>
+                        <p class="muted">إنشاء استطلاعات مع نتائج فورية ورسوم مبسطة، ومنع التصويت المكرر.</p>
+                    </div>
+                    <div class="card">
+                        <h3>رسائل تيليجرام</h3>
+                        <p class="muted">بث رسائل نصية/صور/فيديو لجميع المشتركين مع سجل تسليم دقيق.</p>
+                    </div>
+                    <div class="card">
+                        <h3>لوحة تحكم وتحليلات</h3>
+                        <p class="muted">مؤشرات رئيسية عن المؤيدين، المشاركة، والتفاعل الجغرافي والزمني.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="container">
+                <h2 style="margin:0 0 12px">لماذا Election 360؟</h2>
+                <ul class="list">
+                    <li><span class="ok">✓</span> واجهة عربية بالكامل ودعم اتجاه الكتابة من اليمين لليسار</li>
+                    <li><span class="ok">✓</span> أمان عالي وتخزين وسائط منظم للصور والفيديو</li>
+                    <li><span class="ok">✓</span> تكامل مباشر مع بوت تيليجرام وقاعدة مستخدمين قابلة للبث</li>
+                    <li><span class="ok">✓</span> قوالب مرنة وتصميم متجاوب لجميع الأجهزة</li>
+                    <li><span class="ok">✓</span> دعم فني سريع وخطط مناسبة لجميع الأحجام</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <div class="container stats">
+                <div class="stat"><div class="big">+10,000</div><div class="muted">رسالة مُرسلة</div></div>
+                <div class="stat"><div class="big">+2,500</div><div class="muted">مشارك في الفعاليات</div></div>
+                <div class="stat"><div class="big">+1,200</div><div class="muted">مؤيد مُسجل</div></div>
+                <div class="stat"><div class="big">99.9%</div><div class="muted">جاهزية النظام</div></div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2 style="margin:0 0 12px">آراء المستخدمين</h2>
+                <div class="grid cols-3">
+                    <div class="card">
+                        <p>«منصة متكاملة سهّلت علينا التواصل مع المؤيدين وإدارة الحملة باحترافية.»</p>
+                        <div class="muted">– مدير حملة</div>
+                    </div>
+                    <div class="card">
+                        <p>«التكامل مع تيليجرام والبث الجماعي كان ميزة فارقة بالنسبة لنا.»</p>
+                        <div class="muted">– منسق إعلامي</div>
+                    </div>
+                    <div class="card">
+                        <p>«واجهة عربية واضحة وتقارير مفيدة تساعد في اتخاذ القرار بسرعة.»</p>
+                        <div class="muted">– مرشح مستقل</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="cta">
+            <div class="container card" style="display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+                <div>
+                    <h3 style="margin:0 0 6px">ابدأ رحلتك مع Election 360 اليوم</h3>
+                    <p class="muted" style="margin:0">نقدّم تجربة مجانية وإعداد سريع لصفحة المرشح ولوحة التحكم.</p>
+                </div>
+                <a href="#contact" class="cta">احجز عرضاً توضيحياً</a>
+            </div>
+        </section>
+
+        <section id="contact">
+            <div class="container">
+                <h2 style="margin:0 0 12px">تواصل معنا</h2>
+                {% if messages %}
+                <div class="card" style="margin-bottom:12px">
+                    {% for message in messages %}
+                        {% if 'success' in message.tags %}
+                            <div class="alert success">{{ message }}</div>
+                        {% else %}
+                            <div class="alert error">{{ message }}</div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="card">
+                    <p class="muted" style="margin:0 0 10px">أرسل لنا رسالة وسنعود إليك خلال 24 ساعة.</p>
+                    <form method="post" action="#">
+                        {% csrf_token %}
+                        <div class="grid cols-2" style="gap:10px">
+                            <input name="name" placeholder="الاسم الكامل" style="padding:10px;border:1px solid #e5e7eb;border-radius:10px" />
+                            <input name="phone" placeholder="رقم الهاتف" style="padding:10px;border:1px solid #e5e7eb;border-radius:10px" />
+                        </div>
+                        <input name="email" placeholder="البريد الإلكتروني" style="margin-top:10px;width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px" />
+                        <textarea name="message" placeholder="كيف يمكننا مساعدتك؟" rows="4" style="margin-top:10px;width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px"></textarea>
+                        <div style="margin-top:10px;display:flex;justify-content:flex-end"><button class="cta" type="submit">إرسال</button></div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>© {{ now|default:2025 }} Election 360</div>
+            <div class="muted">م التطوير بواسطة منصة الحملة · جميع الحقوق محفوظة — <a href="{% url 'election_360_landing' %}" class="muted" style="text-decoration:underline">الموقع الرسمي</a></div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -10,7 +10,8 @@ from .models import (
     Bot, BotUser, Campaign, CampaignMessage, CampaignAssignment, SendLog, WebhookEvent, MessageLog,
     # Election 360 models
     Candidate, CandidateUser, Event, EventAttendance, Speech, Poll, PollResponse, Supporter, 
-    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics, Gallery, Testimonial, CampaignBenefit
+    Volunteer, VolunteerActivity, FakeNewsAlert, DailyQuestion, CampaignAnalytics, Gallery, Testimonial, CampaignBenefit,
+    ContactMessage,
 )
 
 
@@ -225,6 +226,13 @@ class DailyQuestionAdmin(admin.ModelAdmin):
 class CampaignAnalyticsAdmin(admin.ModelAdmin):
     list_display = ['candidate', 'total_supporters', 'total_volunteers', 'total_events', 'last_updated']
     readonly_fields = ['last_updated']
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ['name', 'phone', 'email', 'source_page', 'created_at']
+    list_filter = ['source_page', 'created_at']
+    search_fields = ['name', 'phone', 'email', 'message']
+    readonly_fields = ['created_at']
 
 @admin.register(Gallery)
 class GalleryAdmin(admin.ModelAdmin):

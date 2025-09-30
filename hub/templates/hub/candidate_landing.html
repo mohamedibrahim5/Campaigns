@@ -2562,6 +2562,9 @@
                         el.style.display = 'none';
                     }
                 });
+                document.body.style.overflow = '';
+            }
+        });
         // Safari video fix
         function fixSafariVideo(video) {
             if (!video) return;
@@ -2699,9 +2702,7 @@
             clearTimeout(window.__toastTimer);
             window.__toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2800);
         }
-                document.body.style.overflow = '';
-            }
-        });
+        
         // Avatar Modal Functions
         function openAvatarModal() {
             const modal = document.getElementById('avatarModal');
@@ -3070,5 +3071,5 @@
 <footer class="page-footer" style="padding-bottom: 30px;">
     تم التطوير بواسطة منصة الحملة · جميع الحقوق محفوظة
     <br>
-    {% if candidate.website %}<a href="{{ candidate.website }}" target="_blank" style="color:#fff;text-decoration:underline;">الموقع الرسمي</a>{% endif %}
+    <a href="{% url 'election_360_landing' %}" style="color:#fff;text-decoration:underline;">الموقع الرسمي</a>
 </footer>
