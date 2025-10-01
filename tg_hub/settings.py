@@ -77,14 +77,43 @@ WSGI_APPLICATION = 'tg_hub.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        'ENGINE': 'django.db.backends.postgresql',
+        "NAME": "railway",  # Replace with your actual DB name
+        "USER": "postgres",  # Replace with your actual DB user
+        "PASSWORD": "aRYPQqzBrRqfMkowMDnXfbdUDuRmNknX",  # Replace with your actual DB password
+        "HOST": "postgres-2ndv.railway.internal",  # Use Railway's host
+        "PORT": "5432",  # PostgreSQL default por
     }
 }
 
 
+REDIS_USER = "default"
+REDIS_PASSWORD = "uTdWhHjKcWlFWbcztjYyHrewzfKybtJl"
+REDIS_HOST = "redis.railway.internal"
+REDIS_PORT = 6379
+REDIS_DB = 1
+
+REDIS_URL = f"redis://{REDIS_USER}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+    
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
+    },
+}
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
